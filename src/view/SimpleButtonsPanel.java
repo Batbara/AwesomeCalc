@@ -13,35 +13,36 @@ public class SimpleButtonsPanel {
 
     public SimpleButtonsPanel() {
         buttonsPanel = new JPanel(new GridLayout(5, 4));
+        buttonsPanel.setBackground(Color.decode("#B8EEF8"));
         initButtons();
         addButtonsToPanel();
     }
 
     private void initButtons() {
-        resultButton =makeButton("=");
+        resultButton =makeButton("=",48);
 
         buttons = new HashMap<>();
         for (int number = 0; number < 10; number++) {
 
             String iconName = Integer.toString(number);
-            JButton buttonToAdd = makeButton(iconName);
+            JButton buttonToAdd = makeButton(iconName,48);
 
             buttons.put(Integer.toString(number), buttonToAdd);
         }
-        String[] operationList = {"+", "-", "mult", "div", "%", "1/x", "sqrt", "(", ")", "."};
+        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")"};
         for (int operation = 0; operation < operationList.length; operation++) {
-            JButton buttonToAdd = makeButton(operationList[operation]);
+            JButton buttonToAdd = makeButton(operationList[operation],48);
             buttons.put(operationList[operation], buttonToAdd);
         }
     }
-    private JButton makeButton(String iconName){
+    protected JButton makeButton(String iconName, int size){
         String path = "/img/"+iconName+".png";
         ImageIcon buttonIcon = createImageIcon(path);
 
         JButton buttonToAdd = new JButton();
         buttonToAdd.setIcon(buttonIcon);
-        buttonToAdd.setBackground(null);
-        buttonToAdd.setSize(new Dimension(48,48));
+        buttonToAdd.setOpaque(true);
+        buttonToAdd.setSize(new Dimension(size,size));
         buttonToAdd.setPreferredSize(buttonToAdd.getSize());
         return buttonToAdd;
     }
@@ -56,7 +57,11 @@ public class SimpleButtonsPanel {
     }
 
     private void addButtonsToPanel() {
-        String[] buttonsOrder = {"(", ")", "%", "1/x", "7", "8", "9", "div", "4", "5", "6", "mult", "1", "2", "3", "-", "0", "."};
+        String[] buttonsOrder = {"(", ")", "%", "sqrt",
+                                "7", "8", "9", "div",
+                                "4", "5", "6", "mult",
+                                "1", "2", "3", "-",
+                                "0", "x-1"};
         for (String string : buttonsOrder) {
             addButton(string);
         }
