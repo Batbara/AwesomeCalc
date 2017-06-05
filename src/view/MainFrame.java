@@ -9,11 +9,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class MainFrame {
-    DataController dataController;
-    SimpleButtonsPanel simpleButtonsPanel;
-    AdvancedButtonsPanel advancedButtonsPanel;
-    JTextPane screen;
-    JFrame frame;
+    private DataController dataController;
+    private SimpleButtonsPanel simpleButtonsPanel;
+    private AdvancedButtonsPanel advancedButtonsPanel;
+    private TreeComponent treeComponent;
+    private JTextPane screen;
+    private JFrame frame;
 
     public MainFrame(DataController dataController){
         setUIFont(new javax.swing.plaf.FontUIResource("Helvetica", Font.PLAIN, 12));
@@ -21,12 +22,20 @@ public class MainFrame {
         initFrame();
         addMenu();
         this.dataController = dataController;
-        simpleButtonsPanel = new SimpleButtonsPanel();
-        advancedButtonsPanel = new AdvancedButtonsPanel();
+        initPanels();
         initScreen();
+        treeComponent = new TreeComponent(frame.getWidth());
+        this.dataController.setTreeComponent(treeComponent);
 
-        frame.add(screen, BorderLayout.PAGE_START);
-        frame.add(simpleButtonsPanel.getButtonsPanel());
+        this.dataController.addSimpleButtonsListeners();
+        JPanel screenAndButtonsPanel = new JPanel(new BorderLayout());
+        screenAndButtonsPanel.add(new JScrollPane(screen), BorderLayout.PAGE_START);
+        screenAndButtonsPanel.add(simpleButtonsPanel.getButtonsPanel());
+        frame.add(screenAndButtonsPanel);
+       // frame.add(new JScrollPane(screen), BorderLayout.PAGE_START);
+
+        frame.add(treeComponent.getTreePanel(), BorderLayout.EAST);
+       // frame.add(simpleButtonsPanel.getButtonsPanel());
         frame.add(advancedButtonsPanel.getAdvancedButtonsPanel(), BorderLayout.WEST);
         advancedButtonsPanel.getAdvancedButtonsPanel().setVisible(false);
         frame.pack();
@@ -47,6 +56,12 @@ public class MainFrame {
         screen.setBackground(Color.decode("#E9FAFD"));
         screen.setBorder(BorderFactory.createLoweredBevelBorder());
         dataController.setScreen(screen);
+    }
+    private void initPanels(){
+        simpleButtonsPanel = new SimpleButtonsPanel();
+        dataController.setSimpleButtonsPanel(simpleButtonsPanel);
+        advancedButtonsPanel = new AdvancedButtonsPanel();
+        dataController.setAdvancedButtonsPanel(advancedButtonsPanel);
     }
     private void addMenu(){
         JMenuBar menuBar = new JMenuBar();

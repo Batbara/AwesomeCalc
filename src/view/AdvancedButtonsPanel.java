@@ -15,10 +15,10 @@ public class AdvancedButtonsPanel extends SimpleButtonsPanel{
         createButtonsPanel();
         initButtons();
         JPanel buttonsHolder = createButtonsHolder();
-        advancedButtonsPanel.add(buttonsHolder);
+        advancedButtonsPanel.add(buttonsHolder, BorderLayout.CENTER);
     }
     private void createButtonsPanel(){
-        advancedButtonsPanel = new JPanel(new FlowLayout());
+        advancedButtonsPanel = new JPanel(new BorderLayout());
 
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.decode("#5099A7")), "Степенные функции");
@@ -26,7 +26,7 @@ public class AdvancedButtonsPanel extends SimpleButtonsPanel{
         titledBorder.setTitleColor(Color.decode("#197181"));
         advancedButtonsPanel.setBorder(titledBorder);
         advancedButtonsPanel.setBackground(Color.decode("#B8EEF8"));
-        advancedButtonsPanel.setPreferredSize(new Dimension(150,270));
+        advancedButtonsPanel.setPreferredSize(new Dimension(150,150));
         advancedButtonsPanel.setSize(advancedButtonsPanel.getPreferredSize());
     }
     private void initButtons(){
@@ -42,7 +42,8 @@ public class AdvancedButtonsPanel extends SimpleButtonsPanel{
     }
 
     private JPanel createButtonsHolder(){
-        JPanel buttonsHolder = new JPanel(new GridLayout(5,1));
+        JPanel buttonsHolder = new JPanel(new GridLayout(3,2));
+        buttonsHolder.setBackground(Color.decode("#B8EEF8"));
         String []buttonsOrder = {"x^2","x^3",
                                 "x^y","yrootx",
                                 "3rootx"};

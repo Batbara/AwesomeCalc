@@ -10,9 +10,11 @@ public class SimpleButtonsPanel {
     private JPanel buttonsPanel;
     private Map<String, JButton> buttons;
     private JButton resultButton;
+    private JButton eraseButton;
 
     public SimpleButtonsPanel() {
-        buttonsPanel = new JPanel(new GridLayout(5, 4));
+       // buttonsPanel = new JPanel(new GridLayout(5, 4));
+        buttonsPanel = new JPanel(new GridBagLayout());
         buttonsPanel.setBackground(Color.decode("#B8EEF8"));
         initButtons();
         addButtonsToPanel();
@@ -20,7 +22,7 @@ public class SimpleButtonsPanel {
 
     private void initButtons() {
         resultButton =makeButton("=",48);
-
+        eraseButton = makeButton("c",48);
         buttons = new HashMap<>();
         for (int number = 0; number < 10; number++) {
 
@@ -29,7 +31,7 @@ public class SimpleButtonsPanel {
 
             buttons.put(Integer.toString(number), buttonToAdd);
         }
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")"};
+        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")","dot", "del"};
         for (int operation = 0; operation < operationList.length; operation++) {
             JButton buttonToAdd = makeButton(operationList[operation],48);
             buttons.put(operationList[operation], buttonToAdd);
@@ -57,23 +59,53 @@ public class SimpleButtonsPanel {
     }
 
     private void addButtonsToPanel() {
-        String[] buttonsOrder = {"(", ")", "%", "sqrt",
-                                "7", "8", "9", "div",
-                                "4", "5", "6", "mult",
-                                "1", "2", "3", "-",
-                                "0", "x-1"};
-        for (String string : buttonsOrder) {
-            addButton(string);
+        GridBagConstraints c = new GridBagConstraints();
+        String[][] buttonsOrder =
+                {{"(", ")", "sqrt", "%", "del"},
+                {"7", "8", "9", "div", "mult"},
+                {"4", "5", "6", "+"},
+                {"1", "2", "3", "-"},
+                {"0", "dot", "x-1"}};
+        int lastRow = buttonsOrder.length-1;
+        for (int row =0; row<buttonsOrder.length; row++){
+            for (int column = 0; column<buttonsOrder[row].length; column++){
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.gridx = column;
+                c.gridy = row;
+                addButton(buttonsOrder[row][column], c);
+            }
         }
-        buttonsPanel.add(resultButton);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridwidth = 2;
+        c.gridx = 3;
+        c.gridy = lastRow;
+        buttonsPanel.add(resultButton,c);
+
+        c.fill = GridBagConstraints.VERTICAL;
+        c.gridheight = 2;
+        c.gridx = 4;
+        c.gridy = 2;
+        buttonsPanel.add(eraseButton,c);
     }
 
-    private void addButton(String key) {
+    private void addButton(String key, GridBagConstraints c) {
         JButton buttonToAdd = buttons.get(key);
-        buttonsPanel.add(buttonToAdd);
+        buttonsPanel.add(buttonToAdd, c);
     }
 
     public JPanel getButtonsPanel() {
         return buttonsPanel;
+    }
+
+    public Map<String, JButton> getButtons() {
+        return buttons;
+    }
+
+    public JButton getResultButton() {
+        return resultButton;
+    }
+
+    public JButton getEraseButton() {
+        return eraseButton;
     }
 }
