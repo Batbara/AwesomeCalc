@@ -59,8 +59,7 @@ public class TreeComponent {
     }
     public void setTopNode(DefaultMutableTreeNode topNode) {
         DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-        DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
-        root = topNode;
+        DefaultMutableTreeNode root = topNode;
         model.reload(root);
         treePanel.repaint();
     }

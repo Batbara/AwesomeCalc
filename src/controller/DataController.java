@@ -10,10 +10,10 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +58,13 @@ public class DataController {
                 Document screenDoc = screen.getStyledDocument();
                 try {
                     screenDoc.remove(0, screenDoc.getLength());
-                    treeComponent.getTopNode().removeAllChildren();
+
+                    DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
+                    DefaultMutableTreeNode topNode = treeComponent.getTopNode();
+                    topNode.removeAllChildren();
+                    topNode.setUserObject("");
+                    treeModel.reload(topNode);
+
                     formula.clearOperationList();
                 } catch (BadLocationException e1) {
                     System.err.println("BadLocationException caught!");
@@ -95,9 +101,17 @@ public class DataController {
                                 formula.removeLastOperation();
                             }
                         } else {
-                            screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
-                            if (isOperation(key))
+                            if (isOperation(key)) {
+                                if (!checkLastSymbols(screenDoc)) {
+                                    int lastOperationLength = formula.getLastOperation().length();
+                                    screenDoc.remove(screenDoc.getLength() - lastOperationLength, lastOperationLength);
+                                    screen.repaint();
+                                    formula.removeLastOperation();
+                                }
                                 formula.addOperation(getDisplayableName(key));
+                            }
+
+                            screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
                         }
                     } catch (BadLocationException e1) {
                         System.err.println("BadLocationException caught!");
@@ -110,7 +124,7 @@ public class DataController {
     }
 
     private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt"};
+        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "/", "*"};
         for (String operation : operationList) {
             if (operation.equals(key))
                 return true;
@@ -169,6 +183,19 @@ public class DataController {
         } catch (NumberFormatException e) {
             return false;
         }
+        return true;
+    }
+
+    private boolean checkLastSymbols(Document screenDoc) throws BadLocationException {
+        String[] operationList = {"mult", "+", "-",  "div", "%", "x-1", "sqrt", "/", "*"};
+       for(String possibleOperation : operationList){
+           int operationLength = possibleOperation.length();
+           if(operationLength>screenDoc.getLength())
+               continue;
+           String lastSymbols = screenDoc.getText(screenDoc.getLength()-operationLength, operationLength);
+           if(isOperation(lastSymbols))
+               return false;
+       }
         return true;
     }
 }

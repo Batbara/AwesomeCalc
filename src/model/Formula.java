@@ -34,7 +34,13 @@ public class Formula {
         operationList.clear();
     }
     public void removeLastOperation(){
-        operationList.remove(operationList.size());
+        operationList.remove(operationList.size()-1);
+    }
+    public String getLastOperation(){
+        if(operationList.isEmpty())
+            return null;
+        else
+        return operationList.get(operationList.size()-1);
     }
     public void addOperation (String newOperation){
         if(newOperation.equals("(") || newOperation.equals(")"))
