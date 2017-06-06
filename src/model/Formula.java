@@ -6,25 +6,19 @@ import javax.swing.text.Document;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Batbara on 30.05.2017.
- */
+
 public class Formula {
     private List<String> inputFormula;
     private List<String> operationList;
+    private OperationOrderMap orderMap;
     private Document textDocument;
     public Formula(){
         inputFormula = new ArrayList<>();
         operationList = new ArrayList<>();
         textDocument = new DefaultStyledDocument();
+        orderMap = new OperationOrderMap();
     }
-    private void processDocument() throws BadLocationException {
-        String formulaText = textDocument.getText(0,textDocument.getLength());
-        for (String operation : operationList){
-            String [] operands = getOperandsOf(operation,formulaText);
-        }
 
-    }
     public void setTextDocument(Document textDocument) {
         this.textDocument = textDocument;
     }
@@ -33,16 +27,32 @@ public class Formula {
         return operationList;
     }
     public String[] getOperandsOf(String operator, String formula){
-        String regExp = "["+operator+"]";
+        String regExp = "\\(*["+operator+"]\\)*";
         return formula.split(regExp);
     }
     public void clearOperationList(){
         operationList.clear();
     }
-    public void addElement(String element) {
-        inputFormula.add(element);
+    public void removeLastOperation(){
+        operationList.remove(operationList.size());
     }
-    public void addOperation (String operation){
-        operationList.add(operation);
+    public void addOperation (String newOperation){
+        if(newOperation.equals("(") || newOperation.equals(")"))
+            operationList.add(newOperation);
+        else {
+            Integer newOperationOrder = orderMap.getPriority(newOperation);
+            for (int operation = 0; operation < operationList.size(); operation++) {
+                Integer currOperationOrder = orderMap.getPriority(operationList.get(operation));
+                if(newOperationOrder>currOperationOrder){
+                    operationList.add(operation,newOperation);
+                    return;
+                }
+                else {
+                    operationList.add(newOperation);
+                    return;
+                }
+            }
+            operationList.add(newOperation);
+        }
     }
 }

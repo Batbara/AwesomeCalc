@@ -10,7 +10,6 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -60,6 +59,7 @@ public class DataController {
                 try {
                     screenDoc.remove(0, screenDoc.getLength());
                     treeComponent.getTopNode().removeAllChildren();
+                    formula.clearOperationList();
                 } catch (BadLocationException e1) {
                     System.err.println("BadLocationException caught!");
                 }
@@ -91,6 +91,9 @@ public class DataController {
                     try {
                         if (key.equals("del")) {
                             screenDoc.remove(screenDoc.getLength() - 1, 1);
+                            if (isOperation(screenDoc.getText(screenDoc.getLength(), 1))) {
+                                formula.removeLastOperation();
+                            }
                         } else {
                             screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
                             if (isOperation(key))
@@ -107,7 +110,7 @@ public class DataController {
     }
 
     private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")", "dot", "del"};
+        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt"};
         for (String operation : operationList) {
             if (operation.equals(key))
                 return true;
@@ -129,16 +132,14 @@ public class DataController {
 
     private void makeTree(Document screenDoc) throws BadLocationException {
         List<String> operationList = formula.getOperationList();
-        Collections.reverse(operationList);
         String text = screenDoc.getText(0, screenDoc.getLength());
-        String[] arr = {text};
         DefaultMutableTreeNode topNode = treeComponent.getTopNode();
 
-        treeComponent.setTopNodeName(operationList.get(0));
-        topNode = formTree(topNode, arr, operationList,0);
-//        DefaultMutableTreeNode topNode = new DefaultMutableTreeNode();
-//        topNode = formTree(topNode,arr,operationList,0);
-        treeComponent.setTopNode(topNode.getNextNode());
+        String topOperation = operationList.get(0);
+        treeComponent.setTopNodeName(topOperation);
+        topNode = formTree(topNode, formula.getOperandsOf(topOperation, text), operationList, 1);
+
+        treeComponent.setTopNode(topNode);
         treeComponent.updateComponent();
     }
 
@@ -148,18 +149,13 @@ public class DataController {
                 parent.add(new DefaultMutableTreeNode(operand));
             return parent;
         }
-        String operator;
-        if(count+1 < operators.size()) {
-            operator = operators.get(count+1);
-        }
-        else operator= operators.get(count);
+        String operator = operators.get(count);
         DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
         count++;
         for (String operand : operands) {
             if (isInteger(operand)) {
                 parent.add(new DefaultMutableTreeNode(operand));
-            }
-            else {
+            } else {
                 parent.add(formTree(node, formula.getOperandsOf(operator, operand), operators, count));
             }
         }
@@ -169,7 +165,7 @@ public class DataController {
 
     private boolean isInteger(String strToCheck) {
         try {
-            Integer.parseInt(strToCheck);
+            Double.parseDouble(strToCheck);
         } catch (NumberFormatException e) {
             return false;
         }
