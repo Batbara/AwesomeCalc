@@ -10,8 +10,9 @@ public class OperationOrderMap {
     }
     private void fillMap(){
 
-        List<String> highestPriority = new ArrayList<>();
-        highestPriority.add("sqrt");
+
+        String[] firstPriority = {"sqrt", "(", ")"};
+        List<String> highestPriority = new ArrayList<>(Arrays.asList(firstPriority));
         orderMap.add(highestPriority);
 
         String[] secondPriority = { "/", "*", "%", "x-1"};

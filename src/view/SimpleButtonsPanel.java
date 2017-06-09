@@ -108,4 +108,7 @@ public class SimpleButtonsPanel {
     public JButton getEraseButton() {
         return eraseButton;
     }
+    public String[] getOperationsList(){
+        return new String[]{"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")", "dot", "del"};
+    }
 }

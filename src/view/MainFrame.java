@@ -32,10 +32,8 @@ public class MainFrame {
         screenAndButtonsPanel.add(new JScrollPane(screen), BorderLayout.PAGE_START);
         screenAndButtonsPanel.add(simpleButtonsPanel.getButtonsPanel());
         frame.add(screenAndButtonsPanel);
-       // frame.add(new JScrollPane(screen), BorderLayout.PAGE_START);
 
         frame.add(treeComponent.getTreePanel(), BorderLayout.EAST);
-       // frame.add(simpleButtonsPanel.getButtonsPanel());
         frame.add(advancedButtonsPanel.getAdvancedButtonsPanel(), BorderLayout.WEST);
         advancedButtonsPanel.getAdvancedButtonsPanel().setVisible(false);
         frame.pack();
@@ -47,6 +45,7 @@ public class MainFrame {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         frame.setVisible(true);
+        frame.setResizable(false);
     }
     private void initScreen(){
         screen = new JTextPane();

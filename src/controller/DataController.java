@@ -34,6 +34,7 @@ public class DataController {
 
     public void setScreen(JTextPane screen) {
         this.screen = screen;
+        this.screen.setFont(new Font("Helvetica", Font.PLAIN, 19));
     }
 
     public void setTreeComponent(TreeComponent treeComponent) {
@@ -52,10 +53,11 @@ public class DataController {
         Map<String, JButton> simpleButtons = simpleButtonsPanel.getButtons();
         JButton clearButton = simpleButtonsPanel.getEraseButton();
         JButton resultButton = simpleButtonsPanel.getResultButton();
+        Document screenDoc = screen.getStyledDocument();
+
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Document screenDoc = screen.getStyledDocument();
                 try {
                     screenDoc.remove(0, screenDoc.getLength());
 
@@ -74,7 +76,9 @@ public class DataController {
         resultButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Document screenDoc = screen.getStyledDocument();
+                if (formula.getOperationList().isEmpty()) {
+                    return;
+                }
                 formula.setTextDocument(screenDoc);
                 treeComponent.getTopNode().removeAllChildren();
                 try {
@@ -82,38 +86,78 @@ public class DataController {
                 } catch (BadLocationException e1) {
                     e1.printStackTrace();
                 }
-                //formula.clearOperationList();
             }
         });
-        for (String key : simpleButtons.keySet()) {
-            JButton button = simpleButtons.get(key);
 
+        addDelButtonListener(simpleButtons,screenDoc);
+        addOperationButtonsListener(simpleButtons,screenDoc);
+
+        for (String key : simpleButtons.keySet()) {
+            JButton button  = new JButton();
+            if(!isOperation(key) && !key.equals("del")) {
+                button = simpleButtons.get(key);
+            }
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // formula.addElement(key);
-                    screen.setFont(new Font("Helvetica", Font.PLAIN, 19));
-                    Document screenDoc = screen.getStyledDocument();
-                    try {
-                        if (key.equals("del")) {
-                            screenDoc.remove(screenDoc.getLength() - 1, 1);
-                            if (isOperation(screenDoc.getText(screenDoc.getLength(), 1))) {
-                                formula.removeLastOperation();
-                            }
-                        } else {
-                            if (isOperation(key)) {
-                                if (!checkLastSymbols(screenDoc)) {
-                                    int lastOperationLength = formula.getLastOperation().length();
-                                    screenDoc.remove(screenDoc.getLength() - lastOperationLength, lastOperationLength);
-                                    screen.repaint();
-                                    formula.removeLastOperation();
-                                }
-                                formula.addOperation(getDisplayableName(key));
-                            }
 
-                            screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
-                        }
+                    try {
+                        screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
                     } catch (BadLocationException e1) {
+                        System.err.println("BadLocationException caught!");
+                    }
+                    DefaultCaret caret = (DefaultCaret) screen.getCaret();
+                    caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+                }
+            });
+        }
+    }
+    private void addDelButtonListener(Map<String, JButton> simpleButtons, Document screenDoc){
+        JButton delButton = simpleButtons.get("del");
+        final StringBuffer[] buffer = {new StringBuffer()};
+        delButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String lastChar = screenDoc.getText(screenDoc.getLength() - 1, 1);
+                    buffer[0].append(lastChar);
+                    screenDoc.remove(screenDoc.getLength() - 1, 1);
+                    if (isOperation(lastChar)) {
+                        formula.removeLastOperation();
+                        buffer[0] = new StringBuffer();
+                    } else {
+                        if (isNumber(buffer[0].toString())) {
+                            buffer[0] = new StringBuffer();
+                        }
+                    }
+                } catch (BadLocationException e1) {
+                    System.err.println("BadLocationException caught!");
+                }
+                DefaultCaret caret = (DefaultCaret) screen.getCaret();
+                caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+            }
+        });
+    }
+    private void addOperationButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
+        for (String key : simpleButtons.keySet()) {
+            JButton operationButton;
+            if(isOperation(key)) {
+                 operationButton = simpleButtons.get(key);
+            }
+            else continue;
+            operationButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        if (!checkLastSymbols(screenDoc)) {
+                            int lastOperationLength = formula.getLastOperation().length();
+                            screenDoc.remove(screenDoc.getLength() - lastOperationLength, lastOperationLength);
+                            screen.repaint();
+                            formula.removeLastOperation();
+                        }
+                        formula.addOperation(getDisplayableName(key));
+                        screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
+                    }catch (BadLocationException e1) {
                         System.err.println("BadLocationException caught!");
                     }
                     DefaultCaret caret = (DefaultCaret) screen.getCaret();
@@ -124,7 +168,7 @@ public class DataController {
     }
 
     private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "/", "*"};
+        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "/", "*", "(", ")"};
         for (String operation : operationList) {
             if (operation.equals(key))
                 return true;
@@ -145,8 +189,8 @@ public class DataController {
     }
 
     private void makeTree(Document screenDoc) throws BadLocationException {
-        List<String> operationList = formula.getOperationList();
-        String text = screenDoc.getText(0, screenDoc.getLength());
+        List<String> operationList = formula.getListWithoutBrackets();
+        StringBuffer text = new StringBuffer(screenDoc.getText(0, screenDoc.getLength()));
         DefaultMutableTreeNode topNode = treeComponent.getTopNode();
 
         String topOperation = operationList.get(0);
@@ -163,21 +207,25 @@ public class DataController {
                 parent.add(new DefaultMutableTreeNode(operand));
             return parent;
         }
-        String operator = operators.get(count);
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
-        count++;
         for (String operand : operands) {
-            if (isInteger(operand)) {
+            StringBuffer operandBuffer = new StringBuffer(operand);
+            if(operand.charAt(operand.length()-1)==')')
+                operandBuffer = removeBrackets(operand);
+
+            if (isNumber(operand)) {
                 parent.add(new DefaultMutableTreeNode(operand));
             } else {
-                parent.add(formTree(node, formula.getOperandsOf(operator, operand), operators, count));
+                String operator = operators.get(count);
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
+                count++;
+                parent.add(formTree(node, formula.getOperandsOf(operator, operandBuffer), operators, count));
             }
         }
 
         return parent;
     }
 
-    private boolean isInteger(String strToCheck) {
+    private boolean isNumber(String strToCheck) {
         try {
             Double.parseDouble(strToCheck);
         } catch (NumberFormatException e) {
@@ -187,15 +235,23 @@ public class DataController {
     }
 
     private boolean checkLastSymbols(Document screenDoc) throws BadLocationException {
-        String[] operationList = {"mult", "+", "-",  "div", "%", "x-1", "sqrt", "/", "*"};
-       for(String possibleOperation : operationList){
-           int operationLength = possibleOperation.length();
-           if(operationLength>screenDoc.getLength())
-               continue;
-           String lastSymbols = screenDoc.getText(screenDoc.getLength()-operationLength, operationLength);
-           if(isOperation(lastSymbols))
-               return false;
-       }
+        String[] operationList = {"mult", "+", "-", "div", "%", "x-1", "sqrt", "/", "*"};
+        for (String possibleOperation : operationList) {
+            int operationLength = possibleOperation.length();
+            if (operationLength > screenDoc.getLength())
+                continue;
+            String lastSymbols = screenDoc.getText(screenDoc.getLength() - operationLength, operationLength);
+            if(lastSymbols.equals("(") || lastSymbols.equals(")"))
+                return true;
+            if (isOperation(lastSymbols))
+                return false;
+        }
         return true;
+    }
+
+    private StringBuffer removeBrackets(String inputString) {
+        String withoutBrackets = inputString.replaceAll("[(*)*]","");
+        StringBuffer inputStringBuffer = new StringBuffer(withoutBrackets);
+        return inputStringBuffer;
     }
 }
