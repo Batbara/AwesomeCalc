@@ -16,6 +16,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataController {
     private Formula formula;
@@ -149,7 +151,7 @@ public class DataController {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     try {
-                        if (!checkLastSymbols(screenDoc)) {
+                        if (!checkLastSymbols(screenDoc) && !key.equals("(") && !key.equals(")")) {
                             int lastOperationLength = formula.getLastOperation().length();
                             screenDoc.remove(screenDoc.getLength() - lastOperationLength, lastOperationLength);
                             screen.repaint();
@@ -162,6 +164,7 @@ public class DataController {
                     }
                     DefaultCaret caret = (DefaultCaret) screen.getCaret();
                     caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
                 }
             });
         }
@@ -191,6 +194,7 @@ public class DataController {
     private void makeTree(Document screenDoc) throws BadLocationException {
         List<String> operationList = formula.getListWithoutBrackets();
         StringBuffer text = new StringBuffer(screenDoc.getText(0, screenDoc.getLength()));
+      //  text = removeBrackets(text.toString());
         DefaultMutableTreeNode topNode = treeComponent.getTopNode();
 
         String topOperation = operationList.get(0);
@@ -203,13 +207,17 @@ public class DataController {
 
     private DefaultMutableTreeNode formTree(DefaultMutableTreeNode parent, String[] operands, List<String> operators, int count) {
         if (count == operators.size()) {
-            for (String operand : operands)
-                parent.add(new DefaultMutableTreeNode(operand));
+            for (String operand : operands) {
+                StringBuffer operandBuffer = new StringBuffer(operand);
+                if(operand.charAt(operand.length()-1)==')')
+                    operandBuffer = removeBrackets(operand);
+                parent.add(new DefaultMutableTreeNode(operandBuffer.toString()));
+            }
             return parent;
         }
         for (String operand : operands) {
             StringBuffer operandBuffer = new StringBuffer(operand);
-            if(operand.charAt(operand.length()-1)==')')
+            if(operand.charAt(operand.length()-1)==')' && operand.charAt(0) == '(')
                 operandBuffer = removeBrackets(operand);
 
             if (isNumber(operand)) {
@@ -217,8 +225,10 @@ public class DataController {
             } else {
                 String operator = operators.get(count);
                 DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
-                count++;
+               // if(count!=operators.size()-1)
+                    count++;
                 parent.add(formTree(node, formula.getOperandsOf(operator, operandBuffer), operators, count));
+
             }
         }
 
@@ -241,7 +251,7 @@ public class DataController {
             if (operationLength > screenDoc.getLength())
                 continue;
             String lastSymbols = screenDoc.getText(screenDoc.getLength() - operationLength, operationLength);
-            if(lastSymbols.equals("(") || lastSymbols.equals(")"))
+            if(lastSymbols.equals("(")||lastSymbols.equals(")"))
                 return true;
             if (isOperation(lastSymbols))
                 return false;
@@ -250,8 +260,33 @@ public class DataController {
     }
 
     private StringBuffer removeBrackets(String inputString) {
-        String withoutBrackets = inputString.replaceAll("[(*)*]","");
-        StringBuffer inputStringBuffer = new StringBuffer(withoutBrackets);
+
+        StringBuffer inputStringBuffer = new StringBuffer(inputString);
+        if(!isAtomic(inputString))
+            return inputStringBuffer;
+
+        int numberOfClosingBrackets = 0;
+        for (int character = inputString.length()-1; character>=0; character--){
+            if(inputString.charAt(character) == ')'){
+                numberOfClosingBrackets++;
+            }
+            else break;
+        }
+        for (int character = 0; character<numberOfClosingBrackets; character++) {
+            if(inputString.charAt(character) != '(')
+                return inputStringBuffer;
+        }
+        if(numberOfClosingBrackets == 0)
+            return inputStringBuffer;
+        inputStringBuffer.delete(inputString.length()-numberOfClosingBrackets,inputString.length());
+        inputStringBuffer.delete(0,numberOfClosingBrackets);
         return inputStringBuffer;
+
+    }
+    private boolean isAtomic(String operand){
+        Pattern bracketPattern = Pattern.compile("[)].*[(]");
+        Matcher matcher = bracketPattern.matcher(operand);
+
+        return !matcher.find();
     }
 }
