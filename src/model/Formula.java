@@ -1,7 +1,5 @@
 package model;
 
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.Document;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,17 +9,13 @@ public class Formula {
     private List<String> inputFormula;
     private List<String> operationList;
     private OperationOrderMap orderMap;
-    private Document textDocument;
+    private String operationBuffer;
 
     public Formula() {
         inputFormula = new ArrayList<>();
         operationList = new ArrayList<>();
-        textDocument = new DefaultStyledDocument();
         orderMap = new OperationOrderMap();
-    }
-
-    public void setTextDocument(Document textDocument) {
-        this.textDocument = textDocument;
+        operationBuffer = "";
     }
 
     public List<String> getOperationList() {
@@ -29,8 +23,13 @@ public class Formula {
     }
 
     public String[] getOperandsOf(String operator, StringBuffer formula) {
-        String regExp = "[" + operator + "]+(?![^(]*\\))";
-        return formula.toString().split(regExp);
+        String formulaStr = formula.toString();
+        if (formulaStr.charAt(0) == '(' && formulaStr.charAt(formulaStr.length() - 1) == ')') {
+
+            return new String[]{formula.toString()};
+        }
+        String regExp = "[" + operator + "]";
+        return formulaStr.split(regExp);
     }
 
     public void clearOperationList() {
@@ -51,10 +50,9 @@ public class Formula {
     }
 
     public void addOperation(String newOperation) {
-        if (isOperationInList(newOperation))
-            return;
         if (canAddToListEnd(newOperation)) {
             operationList.add(newOperation);
+            operationBuffer = newOperation;
         } else {
 
             int lastOperation = operationList.size() - 1;
@@ -110,7 +108,7 @@ public class Formula {
 
         Integer newOperationPriority = orderMap.getPriority(newOperation);
 
-        Integer lastOperationPriority = orderMap.getPriority(operationList.get(lastOperation));
+        Integer lastOperationPriority = orderMap.getPriority(operationBuffer);
         if (lastOperationPriority == 0) {
 
             operationList.add(newOperation);
@@ -120,23 +118,20 @@ public class Formula {
             int operCount = 1;
             do {
 
-                if (lastOperation - operCount <= 0)
+                if (lastOperation - operCount < 0)
                     break;
                 lastOperation = lastOperation - operCount;
                 lastOperationPriority = orderMap.getPriority(operationList.get(lastOperation));
                 operCount++;
 
             } while (newOperationPriority <= lastOperationPriority);
-            operationList.add(lastOperation, newOperation);
+            operationList.add(lastOperation + 1, newOperation);
+            operationBuffer = newOperation;
             return;
         }
-        if (Objects.equals(newOperationPriority, lastOperationPriority)) {
-            operationList.add(lastOperation, newOperation);
-
-            return;
-        }
-        if (newOperationPriority < lastOperationPriority) {
+        if (newOperationPriority <= lastOperationPriority) {
             operationList.add(newOperation);
+            operationBuffer = newOperation;
         }
     }
 
@@ -159,43 +154,13 @@ public class Formula {
         return openBracketIndex;
     }
 
-    private int countBrackets(String bracketType) {
+    public int countBrackets(String bracketType) {
         int bracketsCount = 0;
         for (String operation : operationList) {
             if (operation.equals(bracketType))
                 bracketsCount++;
         }
         return bracketsCount;
-    }
-
-    private boolean isOperationInList(String newOperation) {
-        if (newOperation.equals("(") || newOperation.equals(")"))
-            return false;
-        List<String> listModifiedBrackets = new ArrayList<>(operationList);
-        removeMatchingBrackets(listModifiedBrackets);
-        if(listModifiedBrackets.isEmpty())
-            return false;
-        for (String operation : listModifiedBrackets) {
-            if (operation.equals(newOperation) && operation.equals("+") && operation.equals("-")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void removeMatchingBrackets(List<String> operList) {
-        boolean isClosingBracket;
-        if (operList.contains(")"))
-            isClosingBracket = true;
-        else
-            return;
-        while (isClosingBracket) {
-            int end = operList.indexOf(")") + 1;
-            int begin = operList.subList(0, end).lastIndexOf("(");
-            operList.subList(begin, end).clear();
-            if (!operList.contains(")"))
-                isClosingBracket = false;
-        }
     }
 
     public List<String> getListWithoutBrackets() {

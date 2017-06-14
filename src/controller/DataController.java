@@ -16,6 +16,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -78,10 +79,9 @@ public class DataController {
         resultButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (formula.getOperationList().isEmpty()) {
+                if (formula.getOperationList().isEmpty() || !isInputValid()) {
                     return;
                 }
-                formula.setTextDocument(screenDoc);
                 treeComponent.getTopNode().removeAllChildren();
                 try {
                     makeTree(screenDoc);
@@ -91,12 +91,12 @@ public class DataController {
             }
         });
 
-        addDelButtonListener(simpleButtons,screenDoc);
-        addOperationButtonsListener(simpleButtons,screenDoc);
+        addDelButtonListener(simpleButtons, screenDoc);
+        addOperationButtonsListener(simpleButtons, screenDoc);
 
         for (String key : simpleButtons.keySet()) {
-            JButton button  = new JButton();
-            if(!isOperation(key) && !key.equals("del")) {
+            JButton button = new JButton();
+            if (!isOperation(key) && !key.equals("del")) {
                 button = simpleButtons.get(key);
             }
             button.addActionListener(new ActionListener() {
@@ -114,7 +114,8 @@ public class DataController {
             });
         }
     }
-    private void addDelButtonListener(Map<String, JButton> simpleButtons, Document screenDoc){
+
+    private void addDelButtonListener(Map<String, JButton> simpleButtons, Document screenDoc) {
         JButton delButton = simpleButtons.get("del");
         final StringBuffer[] buffer = {new StringBuffer()};
         delButton.addActionListener(new ActionListener() {
@@ -140,13 +141,13 @@ public class DataController {
             }
         });
     }
+
     private void addOperationButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
         for (String key : simpleButtons.keySet()) {
             JButton operationButton;
-            if(isOperation(key)) {
-                 operationButton = simpleButtons.get(key);
-            }
-            else continue;
+            if (isOperation(key)) {
+                operationButton = simpleButtons.get(key);
+            } else continue;
             operationButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -159,7 +160,7 @@ public class DataController {
                         }
                         formula.addOperation(getDisplayableName(key));
                         screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
-                    }catch (BadLocationException e1) {
+                    } catch (BadLocationException e1) {
                         System.err.println("BadLocationException caught!");
                     }
                     DefaultCaret caret = (DefaultCaret) screen.getCaret();
@@ -168,6 +169,24 @@ public class DataController {
                 }
             });
         }
+    }
+
+    private boolean isInputValid() {
+        Document screenDoc = screen.getStyledDocument();
+        String lastSymbol = null;
+        try {
+            lastSymbol = screenDoc.getText(screenDoc.getLength() - 1, 1);
+        } catch (BadLocationException e) {
+            System.out.println("BadLocationException caught!");
+        }
+        if (formula.countBrackets("(") != formula.countBrackets(")"))
+            return false;
+        if (isOperation(lastSymbol)) {
+            if (Objects.equals(lastSymbol, "(") || Objects.equals(lastSymbol, ")"))
+                return true;
+            return false;
+        }
+        return true;
     }
 
     private boolean isOperation(String key) {
@@ -194,7 +213,7 @@ public class DataController {
     private void makeTree(Document screenDoc) throws BadLocationException {
         List<String> operationList = formula.getListWithoutBrackets();
         StringBuffer text = new StringBuffer(screenDoc.getText(0, screenDoc.getLength()));
-      //  text = removeBrackets(text.toString());
+        text = removeBrackets(text.toString());
         DefaultMutableTreeNode topNode = treeComponent.getTopNode();
 
         String topOperation = operationList.get(0);
@@ -209,25 +228,27 @@ public class DataController {
         if (count == operators.size()) {
             for (String operand : operands) {
                 StringBuffer operandBuffer = new StringBuffer(operand);
-                if(operand.charAt(operand.length()-1)==')')
-                    operandBuffer = removeBrackets(operand);
                 parent.add(new DefaultMutableTreeNode(operandBuffer.toString()));
             }
             return parent;
         }
         for (String operand : operands) {
             StringBuffer operandBuffer = new StringBuffer(operand);
-            if(operand.charAt(operand.length()-1)==')' && operand.charAt(0) == '(')
-                operandBuffer = removeBrackets(operand);
 
             if (isNumber(operand)) {
                 parent.add(new DefaultMutableTreeNode(operand));
             } else {
+                count++;
                 String operator = operators.get(count);
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
-               // if(count!=operators.size()-1)
+                String[] subOperands = formula.getOperandsOf(operator, operandBuffer);
+                while (subOperands.length == 1) {
                     count++;
-                parent.add(formTree(node, formula.getOperandsOf(operator, operandBuffer), operators, count));
+                    operator = operators.get(count);
+                    subOperands = formula.getOperandsOf(operator, operandBuffer);
+                }
+
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
+                parent.add(formTree(node, subOperands, operators, count));
 
             }
         }
@@ -251,7 +272,7 @@ public class DataController {
             if (operationLength > screenDoc.getLength())
                 continue;
             String lastSymbols = screenDoc.getText(screenDoc.getLength() - operationLength, operationLength);
-            if(lastSymbols.equals("(")||lastSymbols.equals(")"))
+            if (lastSymbols.equals("(") || lastSymbols.equals(")"))
                 return true;
             if (isOperation(lastSymbols))
                 return false;
@@ -260,33 +281,9 @@ public class DataController {
     }
 
     private StringBuffer removeBrackets(String inputString) {
-
-        StringBuffer inputStringBuffer = new StringBuffer(inputString);
-        if(!isAtomic(inputString))
-            return inputStringBuffer;
-
-        int numberOfClosingBrackets = 0;
-        for (int character = inputString.length()-1; character>=0; character--){
-            if(inputString.charAt(character) == ')'){
-                numberOfClosingBrackets++;
-            }
-            else break;
-        }
-        for (int character = 0; character<numberOfClosingBrackets; character++) {
-            if(inputString.charAt(character) != '(')
-                return inputStringBuffer;
-        }
-        if(numberOfClosingBrackets == 0)
-            return inputStringBuffer;
-        inputStringBuffer.delete(inputString.length()-numberOfClosingBrackets,inputString.length());
-        inputStringBuffer.delete(0,numberOfClosingBrackets);
+        String withoutBrackets = inputString.replaceAll("[(]", "");
+        withoutBrackets = withoutBrackets.replaceAll("[)]", "");
+        StringBuffer inputStringBuffer = new StringBuffer(withoutBrackets);
         return inputStringBuffer;
-
-    }
-    private boolean isAtomic(String operand){
-        Pattern bracketPattern = Pattern.compile("[)].*[(]");
-        Matcher matcher = bracketPattern.matcher(operand);
-
-        return !matcher.find();
     }
 }

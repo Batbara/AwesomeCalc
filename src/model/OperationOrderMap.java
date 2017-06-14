@@ -15,12 +15,16 @@ public class OperationOrderMap {
         List<String> highestPriority = new ArrayList<>(Arrays.asList(firstPriority));
         orderMap.add(highestPriority);
 
-        String[] secondPriority = { "/", "*", "%", "x-1"};
+        String[] secondPriority = { "/",  "%", "x-1"};
         List<String> middlePriority = new ArrayList<>(Arrays.asList(secondPriority));
         orderMap.add(middlePriority);
 
-        String[] thirdPriority = {"+","-"};
-        List<String> lowestPriority = new ArrayList<>(Arrays.asList(thirdPriority));
+        String[] thirdPriority = {  "*"};
+        List<String> listThird = new ArrayList<>(Arrays.asList(thirdPriority));
+        orderMap.add(listThird);
+
+        String[] fourthPriority = {"+","-"};
+        List<String> lowestPriority = new ArrayList<>(Arrays.asList(fourthPriority));
         orderMap.add(lowestPriority);
     }
     public Integer getPriority(String operationToCheck){
