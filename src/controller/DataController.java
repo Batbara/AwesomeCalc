@@ -63,7 +63,7 @@ public class DataController {
             public void actionPerformed(ActionEvent e) {
                 try {
                     screenDoc.remove(0, screenDoc.getLength());
-
+                    treeComponent.clearScreen();
                     DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
                     DefaultMutableTreeNode topNode = treeComponent.getTopNode();
                     topNode.removeAllChildren();
@@ -85,18 +85,21 @@ public class DataController {
                 treeComponent.getTopNode().removeAllChildren();
                 try {
                     makeTree(screenDoc);
+                    treeComponent.expandAllNodes(0,treeComponent.getTree().getRowCount());
+                    treeComponent.viewResult();
                 } catch (BadLocationException e1) {
                     e1.printStackTrace();
                 }
             }
         });
 
-        addDelButtonListener(simpleButtons, screenDoc);
+     //   addDelButtonListener(simpleButtons, screenDoc);
         addOperationButtonsListener(simpleButtons, screenDoc);
+        addFunctionButtonsListener(simpleButtons,screenDoc);
 
         for (String key : simpleButtons.keySet()) {
             JButton button = new JButton();
-            if (!isOperation(key) && !key.equals("del")) {
+            if (!isOperation(key) && !key.equals("del") && !isFunction(key)) {
                 button = simpleButtons.get(key);
             }
             button.addActionListener(new ActionListener() {
@@ -145,7 +148,7 @@ public class DataController {
     private void addOperationButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
         for (String key : simpleButtons.keySet()) {
             JButton operationButton;
-            if (isOperation(key)) {
+            if (isOperation(key) && !isFunction(key)) {
                 operationButton = simpleButtons.get(key);
             } else continue;
             operationButton.addActionListener(new ActionListener() {
@@ -170,7 +173,34 @@ public class DataController {
             });
         }
     }
+    private void addFunctionButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
+        for (String key : simpleButtons.keySet()) {
+            JButton functionButton;
+            if (isFunction(key)) {
+                functionButton = simpleButtons.get(key);
+            } else continue;
+            functionButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int numberIndex = getLastNumberIndex(screenDoc);
+                    if (numberIndex == -1)
+                        return;
+                    int numberLength = screenDoc.getLength()-numberIndex;
+                    try {
+                        String functionString = key+"("+
+                                screenDoc.getText(numberIndex,numberLength)
+                                +")";
+                        screenDoc.remove(numberIndex,numberLength);
+                        screenDoc.insertString(screenDoc.getLength(),functionString, null);
+                    } catch (BadLocationException e1) {
+                        e1.printStackTrace();
+                    }
 
+                    formula.addOperation(key);
+                }
+            });
+        }
+    }
     private boolean isInputValid() {
         Document screenDoc = screen.getStyledDocument();
         String lastSymbol = null;
@@ -190,14 +220,21 @@ public class DataController {
     }
 
     private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "/", "*", "(", ")"};
+        String[] operationList = {"+", "-", "mult", "div", "%",  "/", "*", "(", ")"};
         for (String operation : operationList) {
             if (operation.equals(key))
                 return true;
         }
         return false;
     }
-
+    private boolean isFunction(String key){
+        String[] functionList = { "inv", "sqrt"};
+        for (String function : functionList) {
+            if (function.equals(key))
+                return true;
+        }
+        return false;
+    }
     private String getDisplayableName(String key) {
         switch (key) {
             case "mult":
@@ -208,6 +245,25 @@ public class DataController {
                 return ".";
         }
         return key;
+    }
+    private int getLastNumberIndex(Document screenDoc){
+        String text = null;
+        try {
+            text = screenDoc.getText(0,screenDoc.getLength());
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+        int lastNumberIndex = -1;
+        for (int character = screenDoc.getLength()-1; character>=0; character--){
+            String inputChar = String.valueOf(text.charAt(character));
+            if(isNumber(inputChar) || inputChar.equals(".")){
+                lastNumberIndex = character;
+            }
+            else
+                break;
+
+        }
+        return lastNumberIndex;
     }
 
     private void makeTree(Document screenDoc) throws BadLocationException {
@@ -238,18 +294,30 @@ public class DataController {
             if (isNumber(operand)) {
                 parent.add(new DefaultMutableTreeNode(operand));
             } else {
-                count++;
+
                 String operator = operators.get(count);
-                String[] subOperands = formula.getOperandsOf(operator, operandBuffer);
-                while (subOperands.length == 1) {
-                    count++;
-                    operator = operators.get(count);
-                    subOperands = formula.getOperandsOf(operator, operandBuffer);
+                count++;
+                if (isFunction(operator)){
+                    String functionValue = formula.getFunctionValue(operator,operandBuffer);
+                    DefaultMutableTreeNode functionNode = new DefaultMutableTreeNode(operator);
+                    functionNode.add(new DefaultMutableTreeNode(functionValue));
+                    parent.add(functionNode);
                 }
+                else {
+                    String[] subOperands = formula.getOperandsOf(operator, operandBuffer);
+                    while (subOperands.length == 1) {
+                        if(count >= operators.size()-1)
+                         count++;
+                        else
+                            break;
+                        operator = operators.get(count);
+                        subOperands = formula.getOperandsOf(operator, operandBuffer);
+                    }
 
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
-                parent.add(formTree(node, subOperands, operators, count));
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(operator);
+                        parent.add(formTree(node, subOperands, operators, count));
 
+                }
             }
         }
 

@@ -11,20 +11,28 @@ public class OperationOrderMap {
     private void fillMap(){
 
 
-        String[] firstPriority = {"sqrt", "(", ")"};
+        String[] firstPriority = {"(", ")"};
         List<String> highestPriority = new ArrayList<>(Arrays.asList(firstPriority));
         orderMap.add(highestPriority);
 
-        String[] secondPriority = { "/",  "%", "x-1"};
-        List<String> middlePriority = new ArrayList<>(Arrays.asList(secondPriority));
+        String[] secondPriority = {"sqrt", "inv"};
+        List<String> listSecond = new ArrayList<>(Arrays.asList(secondPriority));
+        orderMap.add(listSecond);
+
+        String[] thirdPriority = { "/",  "%"};
+        List<String> middlePriority = new ArrayList<>(Arrays.asList(thirdPriority));
         orderMap.add(middlePriority);
 
-        String[] thirdPriority = {  "*"};
-        List<String> listThird = new ArrayList<>(Arrays.asList(thirdPriority));
+        String[] fourthPriority = { "*"};
+        List<String> listThird = new ArrayList<>(Arrays.asList(fourthPriority));
         orderMap.add(listThird);
 
-        String[] fourthPriority = {"+","-"};
-        List<String> lowestPriority = new ArrayList<>(Arrays.asList(fourthPriority));
+        String[] fifthPriority = {"+"};
+        List<String> fifthList = new ArrayList<>(Arrays.asList(fifthPriority));
+        orderMap.add(fifthList);
+
+        String[] sixthPriority = {"-"};
+        List<String> lowestPriority = new ArrayList<>(Arrays.asList(sixthPriority));
         orderMap.add(lowestPriority);
     }
     public Integer getPriority(String operationToCheck){

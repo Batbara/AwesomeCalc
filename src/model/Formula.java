@@ -3,19 +3,19 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class Formula {
-    private List<String> inputFormula;
     private List<String> operationList;
     private OperationOrderMap orderMap;
-    private String operationBuffer;
+    private String functionBuffer;
 
     public Formula() {
-        inputFormula = new ArrayList<>();
         operationList = new ArrayList<>();
         orderMap = new OperationOrderMap();
-        operationBuffer = "";
+        functionBuffer = null;
     }
 
     public List<String> getOperationList() {
@@ -24,12 +24,19 @@ public class Formula {
 
     public String[] getOperandsOf(String operator, StringBuffer formula) {
         String formulaStr = formula.toString();
-        if (formulaStr.charAt(0) == '(' && formulaStr.charAt(formulaStr.length() - 1) == ')') {
-
-            return new String[]{formula.toString()};
-        }
         String regExp = "[" + operator + "]";
         return formulaStr.split(regExp);
+    }
+
+    public String getFunctionValue(String function, StringBuffer formula) {
+        String formulaStr = formula.toString();
+        String regEx = "(?<=" + function + ")\\d*";
+        Pattern regExpPattern = Pattern.compile(regEx);
+        Matcher matcher = regExpPattern.matcher(formulaStr);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return null;
     }
 
     public void clearOperationList() {
@@ -50,9 +57,10 @@ public class Formula {
     }
 
     public void addOperation(String newOperation) {
-        if (canAddToListEnd(newOperation)) {
+        if (canAddToListEnd(newOperation) || isFunction(newOperation)) {
             operationList.add(newOperation);
-            operationBuffer = newOperation;
+            if (isFunction(newOperation))
+                functionBuffer = newOperation;
         } else {
 
             int lastOperation = operationList.size() - 1;
@@ -69,6 +77,7 @@ public class Formula {
         int openBracketIndex = getLastOpenBracketIndex();
         if (openBracketIndex == 0) {
             operationList.add(openBracketIndex, newOperation);
+            functionBuffer = newOperation;
             return;
         }
 
@@ -78,6 +87,7 @@ public class Formula {
 
         if (opBeforeBracketPriority == 0) {
             operationList.add(operationBeforeBracket + 1, newOperation);
+            functionBuffer = newOperation;
             return;
         }
         if (newOperationPriority > opBeforeBracketPriority) {
@@ -91,15 +101,17 @@ public class Formula {
 
             } while (newOperationPriority <= opBeforeBracketPriority);
             operationList.add(operationBeforeBracket, newOperation);
+            functionBuffer = newOperation;
             return;
         }
         if (Objects.equals(newOperationPriority, opBeforeBracketPriority)) {
             operationList.add(operationBeforeBracket, newOperation);
+            functionBuffer = newOperation;
             return;
         }
         if (newOperationPriority < opBeforeBracketPriority) {
             operationList.add(operationBeforeBracket + 1, newOperation);
-            return;
+            functionBuffer = newOperation;
         }
     }
 
@@ -108,30 +120,39 @@ public class Formula {
 
         Integer newOperationPriority = orderMap.getPriority(newOperation);
 
-        Integer lastOperationPriority = orderMap.getPriority(operationBuffer);
+        Integer lastOperationPriority = orderMap.getPriority(operationList.get(lastOperation));
         if (lastOperationPriority == 0) {
 
             operationList.add(newOperation);
             return;
         }
         if (newOperationPriority > lastOperationPriority) {
-            int operCount = 1;
-            do {
 
-                if (lastOperation - operCount < 0)
-                    break;
-                lastOperation = lastOperation - operCount;
-                lastOperationPriority = orderMap.getPriority(operationList.get(lastOperation));
-                operCount++;
-
-            } while (newOperationPriority <= lastOperationPriority);
-            operationList.add(lastOperation + 1, newOperation);
-            operationBuffer = newOperation;
-            return;
+            if (functionBuffer == null)
+                for (String operation : operationList) {
+                    if (operation.equals(")") || operation.equals("("))
+                        continue;
+                    if (orderMap.getPriority(operation) < orderMap.getPriority(newOperation)) {
+                        operationList.add(operationList.indexOf(operation), newOperation);
+                        return;
+                    }
+                }
+            else {
+                for (int operation = operationList.lastIndexOf(functionBuffer); operation >= 0; operation--) {
+                String currentOperation = operationList.get(operation);
+                String nextOperation = operationList.get(operation-1);
+                    if (orderMap.getPriority(newOperation) > orderMap.getPriority(currentOperation) &&
+                            orderMap.getPriority(newOperation)<orderMap.getPriority(nextOperation)) {
+                        operationList.add(operation, newOperation);
+                        return;
+                    }
+                }
+                operationList.add(0,newOperation);
+                return;
+            }
         }
         if (newOperationPriority <= lastOperationPriority) {
             operationList.add(newOperation);
-            operationBuffer = newOperation;
         }
     }
 
@@ -171,5 +192,14 @@ public class Formula {
             }
         }
         return noBrackets;
+    }
+
+    private boolean isFunction(String key) {
+        String[] functionList = {"sqrt", "inv"};
+        for (String function : functionList) {
+            if (function.equals(key))
+                return true;
+        }
+        return false;
     }
 }

@@ -31,7 +31,7 @@ public class SimpleButtonsPanel {
 
             buttons.put(Integer.toString(number), buttonToAdd);
         }
-        String[] operationList = {"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")","dot", "del"};
+        String[] operationList = {"+", "-", "mult", "div", "%", "inv", "sqrt", "(", ")","dot", "del"};
         for (int operation = 0; operation < operationList.length; operation++) {
             JButton buttonToAdd = makeButton(operationList[operation],48);
             buttons.put(operationList[operation], buttonToAdd);
@@ -65,7 +65,7 @@ public class SimpleButtonsPanel {
                 {"7", "8", "9", "div", "mult"},
                 {"4", "5", "6", "+"},
                 {"1", "2", "3", "-"},
-                {"0", "dot", "x-1"}};
+                {"0", "dot", "inv"}};
         int lastRow = buttonsOrder.length-1;
         for (int row =0; row<buttonsOrder.length; row++){
             for (int column = 0; column<buttonsOrder[row].length; column++){
@@ -109,6 +109,6 @@ public class SimpleButtonsPanel {
         return eraseButton;
     }
     public String[] getOperationsList(){
-        return new String[]{"+", "-", "mult", "div", "%", "x-1", "sqrt", "(", ")", "dot", "del"};
+        return new String[]{"+", "-", "mult", "div", "%", "inv", "sqrt", "(", ")", "dot", "del"};
     }
 }
