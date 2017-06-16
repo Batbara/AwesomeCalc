@@ -68,35 +68,7 @@ public class TreeComponent {
 
         screenDoc.insertString(0,Double.toString(result),null);
     }
-    private double calculate(DefaultMutableTreeNode node){
-        String nodeName = (String)node.getUserObject();
-        if (node.isLeaf())
-            return Double.parseDouble(nodeName);
-        Double result = 0d;
-        for(int child = node.getChildCount()-1; child>=0; child--){
 
-            result = performOperation(nodeName,result,
-                    calculate((DefaultMutableTreeNode)node.getChildAt(child)));
-            //result = performOperation(nodeName,result,calculate((DefaultMutableTreeNode)node.getChildAt(child)));
-
-        }
-        return result;
-    }
-    private Double performOperation(String operation, Double firstOperand, Double secondOperand){
-        switch (operation){
-            case "+":
-                return firstOperand+secondOperand;
-            case "-":
-                return firstOperand-secondOperand;
-            case "*":
-                return firstOperand*secondOperand;
-            case "/":
-                return firstOperand/secondOperand;
-            case "%":
-                return firstOperand%secondOperand;
-        }
-        return 0d;
-    }
     public void updateComponent(){
 
         treePanel.repaint();
@@ -107,6 +79,8 @@ public class TreeComponent {
     public void setTopNode(DefaultMutableTreeNode topNode) {
         DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
         DefaultMutableTreeNode root = topNode;
+        this.topNode = root;
+        model.setRoot(root);
         model.reload(root);
         treePanel.repaint();
     }

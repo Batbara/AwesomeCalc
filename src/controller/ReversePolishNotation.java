@@ -2,6 +2,8 @@ package controller;
 
 import view.TreeComponent;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.Objects;
 import java.util.Stack;
 
 /**
@@ -110,6 +112,28 @@ public class ReversePolishNotation {
             }
         }
 
+        return stack.pop();
+    }
+    public DefaultMutableTreeNode makeTree(String postfix, DefaultMutableTreeNode node) {
+
+       Stack<DefaultMutableTreeNode> stack = new Stack<>();
+        String[] operands = postfix.split(" ");
+        for (String operand : operands) {
+            if (!Objects.equals(operand, " ")) {
+                 node = new DefaultMutableTreeNode(operand);
+                if (isOperation(operand)) {
+                   node.add(stack.pop());
+                   node.add(stack.pop());
+                } else if (isFunction(operand)){
+                    node.add(stack.pop());
+                }
+            }
+            stack.push(node);
+        }
+
+        if (stack.size() != 1) {
+            throw new RuntimeException("Expected exactly one stack value.");
+        }
         return stack.pop();
     }
 

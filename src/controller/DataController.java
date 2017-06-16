@@ -31,6 +31,11 @@ public class DataController {
     public void viewResult(){
         ReversePolishNotation notation = new ReversePolishNotation(treeComponent);
         String postfix = notation.convertToRPN(expression);
+        DefaultMutableTreeNode topNode = treeComponent.getTopNode();
+        topNode = notation.makeTree(postfix, topNode);
+        treeComponent.setTopNode(topNode);
+        treeComponent.updateComponent();
+        treeComponent.expandAllNodes(0,treeComponent.getTree().getRowCount());
         double calcResult = notation.calculate(postfix);
         try {
             treeComponent.viewResult(calcResult);
@@ -50,34 +55,6 @@ public class DataController {
         this.treeComponent = treeComponent;
     }
 
-
-
-    private boolean isInputValid() {
-        Document screenDoc = screen.getStyledDocument();
-        String lastSymbol = null;
-        try {
-            lastSymbol = screenDoc.getText(screenDoc.getLength() - 1, 1);
-        } catch (BadLocationException e) {
-            System.out.println("BadLocationException caught!");
-        }
-        if (formula.countBrackets("(") != formula.countBrackets(")"))
-            return false;
-        if (isOperation(lastSymbol)) {
-            if (Objects.equals(lastSymbol, "(") || Objects.equals(lastSymbol, ")"))
-                return true;
-            return false;
-        }
-        return true;
-    }
-
-    private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%",  "/", "*", "(", ")"};
-        for (String operation : operationList) {
-            if (operation.equals(key))
-                return true;
-        }
-        return false;
-    }
     private boolean isFunction(String key){
         String[] functionList = { "inv", "sqrt"};
         for (String function : functionList) {
