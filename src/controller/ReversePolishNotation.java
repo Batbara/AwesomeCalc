@@ -3,46 +3,45 @@ package controller;
 import view.TreeComponent;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.Enumeration;
 import java.util.Objects;
 import java.util.Stack;
 
-/**
- * Created by Batbara on 16.06.2017.
- */
-public class ReversePolishNotation {
+
+ public class ReversePolishNotation {
     TreeComponent treeComponent;
     public ReversePolishNotation(TreeComponent treeComponent) {
         this.treeComponent = treeComponent;
     }
 
-    public String convertToRPN(String infix) {
+    public static String convertToRPN(String infix) {
         if (infix.length() > 0) {
             String output = "";
             Stack<String> stack = new Stack<>();
-            String[] operands = infix.split(" ");
-            for (String operand : operands) {
-                if (isNumber(operand)) {
-                    output += operand + " ";
-                } else if (operand.equals("(")) {
-                    stack.push(operand);
-                } else if (operand.equals(")")) {
+            String[] tokens = infix.split(" ");
+            for (String token : tokens) {
+                if (isNumber(token)) {
+                    output += token + " ";
+                } else if (token.equals("(")) {
+                    stack.push(token);
+                } else if (token.equals(")")) {
 
                     while (stack.peek() != null && !stack.peek().equals("(")) {
                         output += stack.pop() + " ";
                     }
                     stack.pop();
 
-                } else if (isOperation(operand) || isFunction(operand)) {
+                } else if (isOperation(token) || isFunction(token)) {
                     if (stack.empty())
-                        stack.push(operand);
+                        stack.push(token);
                     else {
                         while (!stack.empty() && (
-                                left_assoc(operand) && getPriority(stack.peek()) >= getPriority(operand)
-                                        || !left_assoc(operand) && getPriority(stack.peek()) > getPriority(operand))) {
+                                left_assoc(token) && getPriority(stack.peek()) >= getPriority(token)
+                                        || !left_assoc(token) && getPriority(stack.peek()) > getPriority(token))) {
                             output += stack.pop() + " ";
 
                         }
-                        stack.push(operand); // operator
+                        stack.push(token); // operator
                     }
                 }
             }
@@ -54,8 +53,44 @@ public class ReversePolishNotation {
         }
         return null;
     }
+    public static String convertToRawString(String postfix){
+        Stack<String> infix = new Stack<>();
+        Stack<String> operations = new Stack<>();
+        for (String token : postfix.split(" ")) {
 
-    public boolean isNumber(String strToCheck) {
+            if (isOperation(token) && token.length() == 1) {
+
+                String rightOperand = infix.pop();
+                String leftOperand = infix.pop();
+
+                int lastOperationPriority = -1;
+                if(operations.empty())
+                    lastOperationPriority=100;
+                else
+                 lastOperationPriority = getPriority(operations.pop());
+
+                if (lastOperationPriority < getPriority(token) )//|| (leftOperand.prec == opPrec && c == '^'))
+                    leftOperand = '(' + leftOperand + ')';
+
+//                if (r.prec < opPrec || (r.prec == opPrec && c != '^'))
+//                    r.ex = '(' + r.ex + ')';
+                if (lastOperationPriority < getPriority(token) )//|| (leftOperand.prec == opPrec && c == '^'))
+                    rightOperand = '(' + rightOperand + ')';
+
+                infix.push(leftOperand+token+rightOperand);
+                operations.push(token);
+            } else if(isFunction(token)){
+                String operand = infix.pop();
+                String stringToPush = token+"("+operand+")";
+                infix.push(stringToPush);
+            }else {
+                infix.push(token);
+            }
+            System.out.printf("%s -> %s%n", token, infix);
+        }
+        return infix.pop();
+    }
+    public static boolean isNumber(String strToCheck) {
         try {
             Double.parseDouble(strToCheck);
         } catch (NumberFormatException e) {
@@ -64,7 +99,7 @@ public class ReversePolishNotation {
         return true;
     }
 
-    public double calculate(String postfix) {
+    public static double calculate(String postfix) {
         Stack<Double> stack = new Stack<>();
         double val1 = 0;
         double val2 = 0;
@@ -114,7 +149,7 @@ public class ReversePolishNotation {
 
         return stack.pop();
     }
-    public DefaultMutableTreeNode makeTree(String postfix, DefaultMutableTreeNode node) {
+    public static DefaultMutableTreeNode makeTree(String postfix, DefaultMutableTreeNode node) {
 
        Stack<DefaultMutableTreeNode> stack = new Stack<>();
         String[] operands = postfix.split(" ");
@@ -136,8 +171,17 @@ public class ReversePolishNotation {
         }
         return stack.pop();
     }
-
-    private boolean left_assoc(String key) {
+    public static String parseIntoRPN(DefaultMutableTreeNode root){
+        StringBuffer expression  = new StringBuffer();
+        Enumeration nodes = new DFSFromRightEnumeration(root);
+        while(nodes.hasMoreElements()){
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) nodes.nextElement();
+            String nodeName = (String) node.getUserObject();
+            expression.append(nodeName).append(" ");
+        }
+        return expression.toString();
+    }
+    private static boolean left_assoc(String key) {
         String[] leftAssoc = {"+", "-", "mult", "div", "%", "/", "*"};
         for (String operation : leftAssoc) {
             if (operation.equals(key))
@@ -146,7 +190,7 @@ public class ReversePolishNotation {
         return false;
     }
 
-    public boolean isOperation(String key) {
+    private static boolean isOperation(String key) {
         String[] operationList = {"+", "-", "mult", "div", "%", "/", "*", "(", ")"};
         for (String operation : operationList) {
             if (operation.equals(key))
@@ -155,7 +199,7 @@ public class ReversePolishNotation {
         return false;
     }
 
-    private int getPriority(String operation) {
+    private static int getPriority(String operation) {
         if (isFunction(operation))
             return 4;
         switch (operation) {
@@ -173,7 +217,7 @@ public class ReversePolishNotation {
         return -1;
     }
 
-    private boolean isFunction(String key) {
+    private static boolean isFunction(String key) {
         String[] functionList = {"inv", "sqrt"};
         for (String function : functionList) {
             if (function.equals(key))

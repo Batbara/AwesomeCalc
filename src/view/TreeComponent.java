@@ -1,5 +1,8 @@
 package view;
 
+import controller.DataController;
+import view.listeners.TreeListener;
+
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
@@ -17,12 +20,10 @@ public class TreeComponent {
         initScreen(width);
         topNode = new DefaultMutableTreeNode("empty tree");
         tree = new JTree(topNode);
-        tree.addTreeSelectionListener(new TreeListener(this));
         JScrollPane calcTreeHolder = new JScrollPane(tree);
         initPanel();
         treePanel.add(resultScreen, BorderLayout.PAGE_START);
         treePanel.add(calcTreeHolder);
-
     }
     private void initScreen(int width){
         resultScreen = new JTextPane();
@@ -58,10 +59,6 @@ public class TreeComponent {
         }
     }
 
-    public void setTopNodeName(String topNodeName){
-        topNode.setUserObject(topNodeName);
-        treePanel.repaint();
-    }
     public void viewResult(double result) throws BadLocationException {
         clearScreen();
         Document screenDoc = resultScreen.getStyledDocument();

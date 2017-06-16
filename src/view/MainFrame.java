@@ -7,6 +7,8 @@ import view.listeners.SimpleButtonsListener;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -84,6 +86,12 @@ public class MainFrame {
                 try {
                     screenDoc.remove(0, screenDoc.getLength());
                     output.delete(0, output.length());
+                    treeComponent.clearScreen();
+                    DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
+                    DefaultMutableTreeNode topNode = treeComponent.getTopNode();
+                    topNode.removeAllChildren();
+                    topNode.setUserObject("");
+                    treeModel.reload(topNode);
 
                 } catch (BadLocationException e1) {
                     System.err.println("BadLocationException caught!");
@@ -95,7 +103,7 @@ public class MainFrame {
             public void actionPerformed(ActionEvent e) {
 
                 //  String text = screenDoc.getText(0, screenDoc.getLength());
-                dataController.setExpression(output.toString());
+                dataController.createExpression(output.toString());
                 dataController.viewResult();
 
 
