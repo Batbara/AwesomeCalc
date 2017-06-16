@@ -11,6 +11,7 @@ public class AdvancedButtonsPanel extends SimpleButtonsPanel{
     private JPanel advancedButtonsPanel;
     private Map<String, JButton> advancedButtons;
     public AdvancedButtonsPanel(){
+        super();
         advancedButtons = new HashMap<>();
         createButtonsPanel();
         initButtons();

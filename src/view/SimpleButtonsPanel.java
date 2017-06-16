@@ -1,14 +1,20 @@
 package view;
 
+import view.listeners.SimpleButtonsListener;
+
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class SimpleButtonsPanel {
     private JPanel buttonsPanel;
-    private Map<String, JButton> buttons;
+    private  Map<String, JButton> buttons;
     private JButton resultButton;
     private JButton eraseButton;
 
@@ -42,6 +48,7 @@ public class SimpleButtonsPanel {
         ImageIcon buttonIcon = createImageIcon(path);
 
         JButton buttonToAdd = new JButton();
+        buttonToAdd.setActionCommand(iconName);
         buttonToAdd.setIcon(buttonIcon);
         buttonToAdd.setOpaque(true);
         buttonToAdd.setSize(new Dimension(size,size));
@@ -97,9 +104,17 @@ public class SimpleButtonsPanel {
         return buttonsPanel;
     }
 
-    public Map<String, JButton> getButtons() {
+
+    public  Map<String, JButton> getButtons() {
         return buttons;
     }
+//    public static String getButtonKey(JButton button){
+//        for(String key : buttons.keySet()){
+//            if(buttons.get(key).equals(button))
+//                return key;
+//        }
+//        return null;
+//    }
 
     public JButton getResultButton() {
         return resultButton;

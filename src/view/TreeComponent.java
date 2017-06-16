@@ -62,12 +62,11 @@ public class TreeComponent {
         topNode.setUserObject(topNodeName);
         treePanel.repaint();
     }
-    public void viewResult() throws BadLocationException {
+    public void viewResult(double result) throws BadLocationException {
         clearScreen();
         Document screenDoc = resultScreen.getStyledDocument();
 
-        Double result = calculate(topNode);
-        screenDoc.insertString(0,result.toString(),null);
+        screenDoc.insertString(0,Double.toString(result),null);
     }
     private double calculate(DefaultMutableTreeNode node){
         String nodeName = (String)node.getUserObject();

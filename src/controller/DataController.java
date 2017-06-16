@@ -1,40 +1,46 @@
 package controller;
 
 import model.Formula;
-import view.AdvancedButtonsPanel;
-import view.SimpleButtonsPanel;
 import view.TreeComponent;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class DataController {
     private Formula formula;
+    private String expression;
     private JTextPane screen;
-    private SimpleButtonsPanel simpleButtonsPanel;
-    private AdvancedButtonsPanel advancedButtonsPanel;
     private TreeComponent treeComponent;
 
     public DataController() {
         formula = new Formula();
+        expression = null;
         screen = new JTextPane();
         treeComponent = new TreeComponent(screen.getWidth());
-        simpleButtonsPanel = new SimpleButtonsPanel();
-        advancedButtonsPanel = new AdvancedButtonsPanel();
+
     }
 
+    public void setExpression(String expression){
+        this.expression = expression;
+    }
+    public void viewResult(){
+        ReversePolishNotation notation = new ReversePolishNotation(treeComponent);
+        String postfix = notation.convertToRPN(expression);
+        double calcResult = notation.calculate(postfix);
+        try {
+            treeComponent.viewResult(calcResult);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+        System.out.println(postfix);
+
+
+    }
     public void setScreen(JTextPane screen) {
         this.screen = screen;
         this.screen.setFont(new Font("Helvetica", Font.PLAIN, 19));
@@ -44,163 +50,8 @@ public class DataController {
         this.treeComponent = treeComponent;
     }
 
-    public void setSimpleButtonsPanel(SimpleButtonsPanel simpleButtonsPanel) {
-        this.simpleButtonsPanel = simpleButtonsPanel;
-    }
 
-    public void setAdvancedButtonsPanel(AdvancedButtonsPanel advancedButtonsPanel) {
-        this.advancedButtonsPanel = advancedButtonsPanel;
-    }
 
-    public void addSimpleButtonsListeners() {
-        Map<String, JButton> simpleButtons = simpleButtonsPanel.getButtons();
-        JButton clearButton = simpleButtonsPanel.getEraseButton();
-        JButton resultButton = simpleButtonsPanel.getResultButton();
-        Document screenDoc = screen.getStyledDocument();
-
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    screenDoc.remove(0, screenDoc.getLength());
-                    treeComponent.clearScreen();
-                    DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
-                    DefaultMutableTreeNode topNode = treeComponent.getTopNode();
-                    topNode.removeAllChildren();
-                    topNode.setUserObject("");
-                    treeModel.reload(topNode);
-
-                    formula.clearOperationList();
-                } catch (BadLocationException e1) {
-                    System.err.println("BadLocationException caught!");
-                }
-            }
-        });
-        resultButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (formula.getOperationList().isEmpty() || !isInputValid()) {
-                    return;
-                }
-                treeComponent.getTopNode().removeAllChildren();
-                try {
-                    makeTree(screenDoc);
-                    treeComponent.expandAllNodes(0,treeComponent.getTree().getRowCount());
-                    treeComponent.viewResult();
-                } catch (BadLocationException e1) {
-                    e1.printStackTrace();
-                }
-            }
-        });
-
-     //   addDelButtonListener(simpleButtons, screenDoc);
-        addOperationButtonsListener(simpleButtons, screenDoc);
-        addFunctionButtonsListener(simpleButtons,screenDoc);
-
-        for (String key : simpleButtons.keySet()) {
-            JButton button = new JButton();
-            if (!isOperation(key) && !key.equals("del") && !isFunction(key)) {
-                button = simpleButtons.get(key);
-            }
-            button.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-
-                    try {
-                        screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
-                    } catch (BadLocationException e1) {
-                        System.err.println("BadLocationException caught!");
-                    }
-                    DefaultCaret caret = (DefaultCaret) screen.getCaret();
-                    caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-                }
-            });
-        }
-    }
-
-    private void addDelButtonListener(Map<String, JButton> simpleButtons, Document screenDoc) {
-        JButton delButton = simpleButtons.get("del");
-        final StringBuffer[] buffer = {new StringBuffer()};
-        delButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    String lastChar = screenDoc.getText(screenDoc.getLength() - 1, 1);
-                    buffer[0].append(lastChar);
-                    screenDoc.remove(screenDoc.getLength() - 1, 1);
-                    if (isOperation(lastChar)) {
-                        formula.removeLastOperation();
-                        buffer[0] = new StringBuffer();
-                    } else {
-                        if (isNumber(buffer[0].toString())) {
-                            buffer[0] = new StringBuffer();
-                        }
-                    }
-                } catch (BadLocationException e1) {
-                    System.err.println("BadLocationException caught!");
-                }
-                DefaultCaret caret = (DefaultCaret) screen.getCaret();
-                caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-            }
-        });
-    }
-
-    private void addOperationButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
-        for (String key : simpleButtons.keySet()) {
-            JButton operationButton;
-            if (isOperation(key) && !isFunction(key)) {
-                operationButton = simpleButtons.get(key);
-            } else continue;
-            operationButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    try {
-                        if (!checkLastSymbols(screenDoc) && !key.equals("(") && !key.equals(")")) {
-                            int lastOperationLength = formula.getLastOperation().length();
-                            screenDoc.remove(screenDoc.getLength() - lastOperationLength, lastOperationLength);
-                            screen.repaint();
-                            formula.removeLastOperation();
-                        }
-                        formula.addOperation(getDisplayableName(key));
-                        screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
-                    } catch (BadLocationException e1) {
-                        System.err.println("BadLocationException caught!");
-                    }
-                    DefaultCaret caret = (DefaultCaret) screen.getCaret();
-                    caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-
-                }
-            });
-        }
-    }
-    private void addFunctionButtonsListener(Map<String, JButton> simpleButtons, Document screenDoc) {
-        for (String key : simpleButtons.keySet()) {
-            JButton functionButton;
-            if (isFunction(key)) {
-                functionButton = simpleButtons.get(key);
-            } else continue;
-            functionButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    int numberIndex = getLastNumberIndex(screenDoc);
-                    if (numberIndex == -1)
-                        return;
-                    int numberLength = screenDoc.getLength()-numberIndex;
-                    try {
-                        String functionString = key+"("+
-                                screenDoc.getText(numberIndex,numberLength)
-                                +")";
-                        screenDoc.remove(numberIndex,numberLength);
-                        screenDoc.insertString(screenDoc.getLength(),functionString, null);
-                    } catch (BadLocationException e1) {
-                        e1.printStackTrace();
-                    }
-
-                    formula.addOperation(key);
-                }
-            });
-        }
-    }
     private boolean isInputValid() {
         Document screenDoc = screen.getStyledDocument();
         String lastSymbol = null;
@@ -235,36 +86,7 @@ public class DataController {
         }
         return false;
     }
-    private String getDisplayableName(String key) {
-        switch (key) {
-            case "mult":
-                return "*";
-            case "div":
-                return "/";
-            case "dot":
-                return ".";
-        }
-        return key;
-    }
-    private int getLastNumberIndex(Document screenDoc){
-        String text = null;
-        try {
-            text = screenDoc.getText(0,screenDoc.getLength());
-        } catch (BadLocationException e) {
-            e.printStackTrace();
-        }
-        int lastNumberIndex = -1;
-        for (int character = screenDoc.getLength()-1; character>=0; character--){
-            String inputChar = String.valueOf(text.charAt(character));
-            if(isNumber(inputChar) || inputChar.equals(".")){
-                lastNumberIndex = character;
-            }
-            else
-                break;
 
-        }
-        return lastNumberIndex;
-    }
 
     private void makeTree(Document screenDoc) throws BadLocationException {
         List<String> operationList = formula.getListWithoutBrackets();
@@ -333,20 +155,7 @@ public class DataController {
         return true;
     }
 
-    private boolean checkLastSymbols(Document screenDoc) throws BadLocationException {
-        String[] operationList = {"mult", "+", "-", "div", "%", "x-1", "sqrt", "/", "*"};
-        for (String possibleOperation : operationList) {
-            int operationLength = possibleOperation.length();
-            if (operationLength > screenDoc.getLength())
-                continue;
-            String lastSymbols = screenDoc.getText(screenDoc.getLength() - operationLength, operationLength);
-            if (lastSymbols.equals("(") || lastSymbols.equals(")"))
-                return true;
-            if (isOperation(lastSymbols))
-                return false;
-        }
-        return true;
-    }
+
 
     private StringBuffer removeBrackets(String inputString) {
         String withoutBrackets = inputString.replaceAll("[(]", "");
