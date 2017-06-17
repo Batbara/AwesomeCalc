@@ -7,10 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class AdvancedButtonsPanel extends SimpleButtonsPanel{
+class AdvancedButtonsPanel extends SimpleButtonsPanel{
     private JPanel advancedButtonsPanel;
     private Map<String, JButton> advancedButtons;
-    public AdvancedButtonsPanel(){
+    AdvancedButtonsPanel(){
         super();
         advancedButtons = new HashMap<>();
         createButtonsPanel();
@@ -38,7 +38,7 @@ public class AdvancedButtonsPanel extends SimpleButtonsPanel{
         }
     }
 
-    public JPanel getAdvancedButtonsPanel() {
+    JPanel getAdvancedButtonsPanel() {
         return advancedButtonsPanel;
     }
 

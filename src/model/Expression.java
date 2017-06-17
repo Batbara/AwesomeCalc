@@ -2,8 +2,8 @@ package model;
 
 
 public class Expression {
-    String infix;
-    String postfix;
+    private String infix;
+    private String postfix;
     public Expression() {
        infix = "";
        postfix = "";

@@ -1,33 +1,28 @@
 package controller;
 
-import view.TreeComponent;
+import model.CustomNode;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.Stack;
 
 
- public class ReversePolishNotation {
-    TreeComponent treeComponent;
-    public ReversePolishNotation(TreeComponent treeComponent) {
-        this.treeComponent = treeComponent;
-    }
+public class ReversePolishNotation {
 
     public static String convertToRPN(String infix) {
         if (infix.length() > 0) {
-            String output = "";
+            StringBuilder output = new StringBuilder();
             Stack<String> stack = new Stack<>();
             String[] tokens = infix.split(" ");
             for (String token : tokens) {
                 if (isNumber(token)) {
-                    output += token + " ";
+                    output.append(token).append(" ");
                 } else if (token.equals("(")) {
                     stack.push(token);
                 } else if (token.equals(")")) {
 
                     while (stack.peek() != null && !stack.peek().equals("(")) {
-                        output += stack.pop() + " ";
+                        output.append(stack.pop()).append(" ");
                     }
                     stack.pop();
 
@@ -38,22 +33,23 @@ import java.util.Stack;
                         while (!stack.empty() && (
                                 left_assoc(token) && getPriority(stack.peek()) >= getPriority(token)
                                         || !left_assoc(token) && getPriority(stack.peek()) > getPriority(token))) {
-                            output += stack.pop() + " ";
+                            output.append(stack.pop()).append(" ");
 
                         }
-                        stack.push(token); // operator
+                        stack.push(token);
                     }
                 }
             }
 
             while (!stack.empty()) {
-                output += stack.pop() + " ";
+                output.append(stack.pop()).append(" ");
             }
-            return output.trim(); // remove trailing spaces from result
+            return output.toString().trim();
         }
         return null;
     }
-    public static String convertToRawString(String postfix){
+
+    public static String convertToRawString(String postfix) {
         Stack<String> infix = new Stack<>();
         Stack<String> operations = new Stack<>();
         for (String token : postfix.split(" ")) {
@@ -64,33 +60,32 @@ import java.util.Stack;
                 String leftOperand = infix.pop();
 
                 int lastOperationPriority = -1;
-                if(operations.empty())
-                    lastOperationPriority=100;
+                if (operations.empty())
+                    lastOperationPriority = 100;
                 else
-                 lastOperationPriority = getPriority(operations.pop());
+                    lastOperationPriority = getPriority(operations.pop());
 
-                if (lastOperationPriority < getPriority(token) )//|| (leftOperand.prec == opPrec && c == '^'))
+                if (lastOperationPriority < getPriority(token))
                     leftOperand = '(' + leftOperand + ')';
 
-//                if (r.prec < opPrec || (r.prec == opPrec && c != '^'))
-//                    r.ex = '(' + r.ex + ')';
-                if (lastOperationPriority < getPriority(token) )//|| (leftOperand.prec == opPrec && c == '^'))
+                if (lastOperationPriority < getPriority(token))
                     rightOperand = '(' + rightOperand + ')';
 
-                infix.push(leftOperand+token+rightOperand);
+                infix.push(leftOperand + token + rightOperand);
                 operations.push(token);
-            } else if(isFunction(token)){
+            } else if (isFunction(token)) {
                 String operand = infix.pop();
-                String stringToPush = token+"("+operand+")";
+                String stringToPush = token + "(" + operand + ")";
                 infix.push(stringToPush);
-            }else {
+            } else {
                 infix.push(token);
             }
             System.out.printf("%s -> %s%n", token, infix);
         }
         return infix.pop();
     }
-    public static boolean isNumber(String strToCheck) {
+
+    private static boolean isNumber(String strToCheck) {
         try {
             Double.parseDouble(strToCheck);
         } catch (NumberFormatException e) {
@@ -149,17 +144,19 @@ import java.util.Stack;
 
         return stack.pop();
     }
-    public static DefaultMutableTreeNode makeTree(String postfix, DefaultMutableTreeNode node) {
 
-       Stack<DefaultMutableTreeNode> stack = new Stack<>();
+    public static CustomNode makeTree(String postfix, CustomNode node) {
+
+        Stack<CustomNode> stack = new Stack<>();
         String[] operands = postfix.split(" ");
         for (String operand : operands) {
             if (!Objects.equals(operand, " ")) {
-                 node = new DefaultMutableTreeNode(operand);
+                node = new CustomNode(operand);
                 if (isOperation(operand)) {
-                   node.add(stack.pop());
-                   node.add(stack.pop());
-                } else if (isFunction(operand)){
+
+                    node.add(stack.pop());
+                    node.add(stack.pop());
+                } else if (isFunction(operand)) {
                     node.add(stack.pop());
                 }
             }
@@ -171,16 +168,18 @@ import java.util.Stack;
         }
         return stack.pop();
     }
-    public static String parseIntoRPN(DefaultMutableTreeNode root){
-        StringBuffer expression  = new StringBuffer();
+
+    public static String parseIntoRPN(CustomNode root) {
+        StringBuilder expression = new StringBuilder();
         Enumeration nodes = new DFSFromRightEnumeration(root);
-        while(nodes.hasMoreElements()){
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) nodes.nextElement();
+        while (nodes.hasMoreElements()) {
+            CustomNode node = (CustomNode) nodes.nextElement();
             String nodeName = (String) node.getUserObject();
             expression.append(nodeName).append(" ");
         }
         return expression.toString();
     }
+
     private static boolean left_assoc(String key) {
         String[] leftAssoc = {"+", "-", "mult", "div", "%", "/", "*"};
         for (String operation : leftAssoc) {

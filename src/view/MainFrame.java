@@ -102,11 +102,9 @@ public class MainFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                //  String text = screenDoc.getText(0, screenDoc.getLength());
-                dataController.createExpression(output.toString());
+                dataController.setUp(output.toString());
+
                 dataController.viewResult();
-
-
             }
         });
     }

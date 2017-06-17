@@ -3,9 +3,6 @@ package controller;
 import javax.swing.tree.TreeNode;
 import java.util.*;
 
-/**
- * Created by Batbara on 16.06.2017.
- */
 public class DFSFromRightEnumeration implements Enumeration<TreeNode> {
     private TreeNode root;
     private Enumeration<TreeNode> children;
