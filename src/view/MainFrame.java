@@ -2,8 +2,13 @@ package view;
 
 
 import controller.DataController;
+import view.listeners.SimpleButtonsListener;
 
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,18 +21,19 @@ public class MainFrame {
     private JTextPane screen;
     private JFrame frame;
 
-    public MainFrame(DataController dataController){
+    public MainFrame(DataController dataController) {
         setUIFont(new javax.swing.plaf.FontUIResource("Helvetica", Font.PLAIN, 12));
 
         initFrame();
         addMenu();
         this.dataController = dataController;
-        initPanels();
+
         initScreen();
+        initPanels();
         treeComponent = new TreeComponent(frame.getWidth());
         this.dataController.setTreeComponent(treeComponent);
 
-        this.dataController.addSimpleButtonsListeners();
+
         JPanel screenAndButtonsPanel = new JPanel(new BorderLayout());
         screenAndButtonsPanel.add(new JScrollPane(screen), BorderLayout.PAGE_START);
         screenAndButtonsPanel.add(simpleButtonsPanel.getButtonsPanel());
@@ -39,7 +45,8 @@ public class MainFrame {
         frame.pack();
 
     }
-    private void initFrame(){
+
+    private void initFrame() {
         frame = new JFrame("AwesomeCalc");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -47,22 +54,62 @@ public class MainFrame {
         frame.setVisible(true);
         frame.setResizable(false);
     }
-    private void initScreen(){
+
+    private void initScreen() {
         screen = new JTextPane();
-        screen.setSize(new Dimension(frame.getWidth(),50));
+        screen.setSize(new Dimension(frame.getWidth(), 50));
         screen.setPreferredSize(screen.getSize());
         screen.setEditable(false);
         screen.setBackground(Color.decode("#E9FAFD"));
         screen.setBorder(BorderFactory.createLoweredBevelBorder());
+
+        screen.setFont(new Font("Helvetica", Font.PLAIN, 19));
         dataController.setScreen(screen);
     }
-    private void initPanels(){
+
+    private void initPanels() {
         simpleButtonsPanel = new SimpleButtonsPanel();
-        dataController.setSimpleButtonsPanel(simpleButtonsPanel);
+        addSimpleButtonsListeners(screen);
+
         advancedButtonsPanel = new AdvancedButtonsPanel();
-        dataController.setAdvancedButtonsPanel(advancedButtonsPanel);
     }
-    private void addMenu(){
+
+    private void addSimpleButtonsListeners(JTextPane screen) {
+        Document screenDoc = screen.getStyledDocument();
+        StringBuffer output = new StringBuffer();
+        for (String key : simpleButtonsPanel.getButtons().keySet()) {
+            simpleButtonsPanel.getButtons().get(key).addActionListener(new SimpleButtonsListener(screen, output));
+        }
+        simpleButtonsPanel.getEraseButton().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    screenDoc.remove(0, screenDoc.getLength());
+                    output.delete(0, output.length());
+                    treeComponent.clearScreen();
+                    DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
+                    DefaultMutableTreeNode topNode = treeComponent.getTopNode();
+                    topNode.removeAllChildren();
+                    topNode.setUserObject("");
+                    treeModel.reload(topNode);
+
+                } catch (BadLocationException e1) {
+                    System.err.println("BadLocationException caught!");
+                }
+            }
+        });
+        simpleButtonsPanel.getResultButton().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                dataController.setUp(output.toString());
+
+                dataController.viewResult();
+            }
+        });
+    }
+
+    private void addMenu() {
         JMenuBar menuBar = new JMenuBar();
         JMenu modeMenu = new JMenu("Вид");
         modeMenu.setForeground(Color.decode("#197181"));
@@ -93,13 +140,14 @@ public class MainFrame {
         menuBar.add(modeMenu);
         frame.setJMenuBar(menuBar);
     }
-    private static void setUIFont (javax.swing.plaf.FontUIResource f){
+
+    private static void setUIFont(javax.swing.plaf.FontUIResource f) {
         java.util.Enumeration keys = UIManager.getDefaults().keys();
         while (keys.hasMoreElements()) {
             Object key = keys.nextElement();
-            Object value = UIManager.get (key);
+            Object value = UIManager.get(key);
             if (value != null && value instanceof javax.swing.plaf.FontUIResource)
-                UIManager.put (key, f);
+                UIManager.put(key, f);
         }
     }
 }
