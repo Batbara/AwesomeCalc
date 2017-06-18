@@ -1,5 +1,7 @@
 package view.listeners;
 
+import controller.Validations;
+
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
@@ -7,12 +9,12 @@ import javax.swing.text.Document;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class SimpleButtonsListener implements ActionListener {
+public class ButtonsListener implements ActionListener {
 
     private JTextPane screen;
     private StringBuffer output;
 
-    public SimpleButtonsListener(JTextPane screen, StringBuffer output) {
+    public ButtonsListener(JTextPane screen, StringBuffer output) {
 
         this.screen = screen;
         this.output = output;
@@ -22,7 +24,11 @@ public class SimpleButtonsListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         Document screenDoc = screen.getStyledDocument();
         String key = e.getActionCommand();
-        if (isFunction(key)) {
+        if (!Validations.isInsertionValid(output, key)) {
+            System.err.println("Input Error!");
+            return;
+        }
+        if (Validations.isFunction(key)) {
             int numberIndex = getLastNumberIndex(screenDoc);
             if (numberIndex == -1)
                 return;
@@ -39,11 +45,12 @@ public class SimpleButtonsListener implements ActionListener {
             }
         } else {
             try {
-                if (isOperation(getDisplayableName(key))) {
+                if (Validations.isOperation(getDisplayableName(key))) {
 
                     output.append(" ").append(getDisplayableName(key)).append(" ");
                 } else output.append(getDisplayableName(key));
-                screenDoc.insertString(screenDoc.getLength(), getDisplayableName(key), null);
+                String stringToDisplay = getDisplayableName(key);
+                screenDoc.insertString(screenDoc.getLength(), stringToDisplay, null);
             } catch (BadLocationException e1) {
                 System.err.println("BadLocationException caught!");
             }
@@ -51,24 +58,6 @@ public class SimpleButtonsListener implements ActionListener {
         DefaultCaret caret = (DefaultCaret) screen.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
-    }
-
-    private boolean isFunction(String key) {
-        String[] functionList = {"inv", "sqrt"};
-        for (String function : functionList) {
-            if (function.equals(key))
-                return true;
-        }
-        return false;
-    }
-
-    private boolean isOperation(String key) {
-        String[] operationList = {"+", "-", "mult", "div", "%", "/", "*", "(", ")"};
-        for (String operation : operationList) {
-            if (operation.equals(key))
-                return true;
-        }
-        return false;
     }
 
     private String getDisplayableName(String key) {
@@ -94,7 +83,7 @@ public class SimpleButtonsListener implements ActionListener {
         for (int character = screenDoc.getLength() - 1; character >= 0; character--) {
             assert text != null;
             String inputChar = String.valueOf(text.charAt(character));
-            if (isNumber(inputChar) || inputChar.equals(".")) {
+            if (Validations.isNumber(inputChar) || inputChar.equals(".")) {
                 lastNumberIndex = character;
             } else
                 break;
@@ -103,12 +92,5 @@ public class SimpleButtonsListener implements ActionListener {
         return lastNumberIndex;
     }
 
-    private boolean isNumber(String strToCheck) {
-        try {
-            Double.parseDouble(strToCheck);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        return true;
-    }
+
 }

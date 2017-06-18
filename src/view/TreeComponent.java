@@ -5,6 +5,7 @@ import model.CustomNode;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
@@ -21,7 +22,7 @@ public class TreeComponent {
         tree = new JTree(topNode);
         JScrollPane calcTreeHolder = new JScrollPane(tree);
         initPanel();
-        treePanel.add(resultScreen, BorderLayout.PAGE_START);
+        treePanel.add(new JScrollPane(resultScreen), BorderLayout.PAGE_START);
         treePanel.add(calcTreeHolder);
     }
 
@@ -33,6 +34,8 @@ public class TreeComponent {
         resultScreen.setBackground(Color.decode("#E9FAFD"));
         resultScreen.setBorder(BorderFactory.createLoweredBevelBorder());
         resultScreen.setFont(new Font("Helvetica", Font.PLAIN, 22));
+        DefaultCaret caret = (DefaultCaret) resultScreen.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
     }
 
     private void initPanel() {

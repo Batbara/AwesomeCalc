@@ -2,7 +2,8 @@ package view;
 
 
 import controller.DataController;
-import view.listeners.SimpleButtonsListener;
+import controller.Validations;
+import view.listeners.ButtonsListener;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -12,6 +13,10 @@ import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class MainFrame {
     private DataController dataController;
@@ -29,7 +34,7 @@ public class MainFrame {
         this.dataController = dataController;
 
         initScreen();
-        initPanels();
+        initButtonPanels();
         treeComponent = new TreeComponent(frame.getWidth());
         this.dataController.setTreeComponent(treeComponent);
 
@@ -67,18 +72,91 @@ public class MainFrame {
         dataController.setScreen(screen);
     }
 
-    private void initPanels() {
+    private void initButtonPanels() {
+
+        StringBuffer output = new StringBuffer();
         simpleButtonsPanel = new SimpleButtonsPanel();
-        addSimpleButtonsListeners(screen);
+        addSimpleButtonsListeners(screen, output);
 
         advancedButtonsPanel = new AdvancedButtonsPanel();
+        addAdvancedButtonsListeners(screen, output);
     }
 
-    private void addSimpleButtonsListeners(JTextPane screen) {
+    private void addAdvancedButtonsListeners(JTextPane screen, StringBuffer output) {
+
+        Map<String, JButton> advancedButtons = advancedButtonsPanel.getAdvancedButtons();
+        for (String key : advancedButtons.keySet()) {
+            advancedButtons.get(key).addActionListener(new ButtonsListener(screen, output));
+        }
+    }
+
+    private void addSimpleButtonsListeners(JTextPane screen, StringBuffer output) {
         Document screenDoc = screen.getStyledDocument();
-        StringBuffer output = new StringBuffer();
-        for (String key : simpleButtonsPanel.getButtons().keySet()) {
-            simpleButtonsPanel.getButtons().get(key).addActionListener(new SimpleButtonsListener(screen, output));
+        Map<String, JButton> simpleButtons = simpleButtonsPanel.getButtons();
+        for (String key : simpleButtons.keySet()) {
+            if (key.equals("del")) {
+                simpleButtons.get(key).addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+
+                            List<String> outputTokens = new LinkedList<>(Arrays.asList(output.toString().split(" ")));
+                            String lastToken = outputTokens.get(outputTokens.size() - 1);
+                            if (Validations.isNumber(lastToken)) {
+                                screenDoc.remove(screenDoc.getLength() - 1, 1);
+                                lastToken = lastToken.substring(0, lastToken.length() - 1);
+                                outputTokens.remove(outputTokens.size() - 1);
+                                outputTokens.add(lastToken);
+                                output.delete(0, output.length());
+                                for (String token : outputTokens) {
+                                    output.append(token).append(" ");
+                                }
+                            } else if (Validations.isFunction(lastToken)) {
+                                outputTokens.remove(outputTokens.size() - 1);
+                                String tokenBeforeLast = outputTokens.get(outputTokens.size() - 1);
+                                int charsToRemove = 2 + lastToken.length() + tokenBeforeLast.length();
+                                outputTokens.remove(outputTokens.size() - 1);
+                                screenDoc.remove(screenDoc.getLength() - charsToRemove, charsToRemove);
+                                output.delete(0, output.length());
+                                for (String token : outputTokens) {
+                                    output.append(token).append(" ");
+                                }
+                            } else {
+                                outputTokens.remove(outputTokens.size() - 1);
+                                screenDoc.remove(0, screenDoc.getLength());
+
+                                output.delete(0, output.length());
+                                for (String token : outputTokens) {
+                                    output.append(token).append(" ");
+                                }
+                                String stringToView = output.toString().replaceAll("\\s+", "");
+                                screenDoc.insertString(0, stringToView, null);
+                            }
+                            String outputString = output.toString().replaceAll("\\s+", "");
+                            if (outputString.isEmpty()) {
+                                output.delete(0, output.length());
+                                treeComponent.clearScreen();
+                                DefaultTreeModel treeModel = (DefaultTreeModel) treeComponent.getTree().getModel();
+                                DefaultMutableTreeNode topNode = treeComponent.getTopNode();
+                                topNode.removeAllChildren();
+                                topNode.setUserObject("");
+                                treeModel.reload(topNode);
+                            }
+                            String topNodeName = (String) treeComponent.getTopNode().getUserObject();
+                            if (topNodeName.equals("") ||
+                                    topNodeName.equals("empty tree"))
+                                return;
+                            if (Validations.isOutputValid(output)) {
+                                dataController.setUp(output.toString());
+                                dataController.viewResult();
+                            }
+                        } catch (BadLocationException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+            } else
+                simpleButtons.get(key).addActionListener(new ButtonsListener(screen, output));
         }
         simpleButtonsPanel.getEraseButton().addActionListener(new ActionListener() {
             @Override
@@ -101,10 +179,12 @@ public class MainFrame {
         simpleButtonsPanel.getResultButton().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                dataController.setUp(output.toString());
-
-                dataController.viewResult();
+                if (Validations.isOutputValid(output)) {
+                    dataController.setUp(output.toString());
+                    dataController.viewResult();
+                } else
+                    JOptionPane.showMessageDialog(JOptionPane.getRootFrame(), "Некорректное выражение!",
+                            "Нельзя так", JOptionPane.WARNING_MESSAGE);
             }
         });
     }
