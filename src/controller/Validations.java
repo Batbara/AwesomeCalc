@@ -64,7 +64,7 @@ public class Validations {
                 return !(tokenStatus.equals("operation") || tokenStatus.equals("("));
             case "dot":
             case "function":
-                return tokenStatus.equals("number");
+                return tokenStatus.equals("number") || tokenStatus.equals("function");
             case "(":
                 return !(tokenStatus.equals("number") || tokenStatus.equals("function") || tokenStatus.equals(")"));
             case ")":
@@ -104,6 +104,7 @@ public class Validations {
             if (token.equals(")"))
                 closeBracketsCount++;
         }
-        return openBracketsCount == closeBracketsCount && !isOperation(lastToken);
+        return openBracketsCount == closeBracketsCount && lastToken.equals(")")
+                || openBracketsCount == closeBracketsCount && !isOperation(lastToken);
     }
 }

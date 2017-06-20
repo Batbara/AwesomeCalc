@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 
@@ -46,7 +47,14 @@ public class TreeComponent {
     JPanel getTreePanel() {
         return treePanel;
     }
+    public void clearTreeComponent() throws BadLocationException {
+        clearScreen();
+        DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();
 
+        topNode.removeAllChildren();
+        topNode.setUserObject("");
+        treeModel.reload(topNode);
+    }
     void clearScreen() throws BadLocationException {
         Document screenDoc = resultScreen.getStyledDocument();
         screenDoc.remove(0, screenDoc.getLength());
@@ -69,7 +77,6 @@ public class TreeComponent {
     public void viewResult(double result) throws BadLocationException {
         clearScreen();
         Document screenDoc = resultScreen.getStyledDocument();
-
         screenDoc.insertString(0, Double.toString(result), null);
     }
 

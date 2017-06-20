@@ -8,6 +8,9 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 public class ButtonsListener implements ActionListener {
 
@@ -25,20 +28,28 @@ public class ButtonsListener implements ActionListener {
         Document screenDoc = screen.getStyledDocument();
         String key = e.getActionCommand();
         if (!Validations.isInsertionValid(output, key)) {
-            System.err.println("Input Error!");
+            System.out.println("Input Error!");
             return;
         }
         if (Validations.isFunction(key)) {
-            int numberIndex = getLastNumberIndex(screenDoc);
-            if (numberIndex == -1)
-                return;
-            int numberLength = screenDoc.getLength() - numberIndex;
+            int lastTokenIndex = getLastNumberIndex(screenDoc);
+            if (lastTokenIndex == -1) {
+                List<String> outputTokens = new LinkedList<>(Arrays.asList(output.toString().split(" ")));
+                String lastToken = outputTokens.get(outputTokens.size() - 1);
+                try {
+                    String screenText = screenDoc.getText(0, screenDoc.getLength());
+                    lastTokenIndex = screenText.lastIndexOf(lastToken);
+                } catch (BadLocationException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            int tokenLength = screenDoc.getLength() - lastTokenIndex;
             try {
                 String functionString = key + "(" +
-                        screenDoc.getText(numberIndex, numberLength)
+                        screenDoc.getText(lastTokenIndex, tokenLength)
                         + ")";
                 output.append(" ").append(key).append(" ");
-                screenDoc.remove(numberIndex, numberLength);
+                screenDoc.remove(lastTokenIndex, tokenLength);
                 screenDoc.insertString(screenDoc.getLength(), functionString, null);
             } catch (BadLocationException e1) {
                 e1.printStackTrace();
